@@ -4,6 +4,7 @@ import streamlit as st
 import pandas as pd
 from datetime import datetime, timedelta
 from korean_lunar_calendar import KoreanLunarCalendar
+import re
 
 # 절입일 불러오기 (CSV 또는 Excel)
 import os
@@ -21,11 +22,9 @@ if uploaded_file:
             name = str(row['절기']).strip()
             try:
                 # 절입일 문자열에서 날짜 시간 추출 (ex. '1905/04/21 02:55')
-                parts = str(row['절입일']).split()
-                for p in reversed(parts):
-                    if '/' in p and ':' in p:
-                        dt = pd.to_datetime(p)
-                        break
+                match = re.search(r"\d{4}/\d{2}/\d{2} \d{2}:\d{2}", str(row["절입일"]))
+                if match:
+                    dt = pd.to_datetime(match.group(), format="%Y/%m/%d %H:%M")
                 else:
                     continue
             except Exception:
