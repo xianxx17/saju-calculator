@@ -16,8 +16,6 @@ if uploaded_file:
 else:
     st.warning("절입일_1905_2100.xlsx 파일을 업로드해주세요.")
 
-# 엑셀 파일 읽기
-solar_terms = pd.read_excel(excel_path)
 
 # 24절기 테이블 구성 (dict: 연도 -> 절기 -> datetime)
 def build_solar_terms_dict(df):
