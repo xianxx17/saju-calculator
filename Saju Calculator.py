@@ -6,10 +6,15 @@ from datetime import datetime, timedelta
 from korean_lunar_calendar import KoreanLunarCalendar
 
 # 절입일 불러오기 (CSV 또는 Excel)
+import pandas as pd
 import os
-st.write("현재 실행 중인 경로:", os.getcwd())
-st.write("현재 경로의 파일 목록:", os.listdir())
-solar_terms = pd.read_excel("절입일_1905_2100.xlsx")
+
+# 현재 파일의 디렉토리 경로를 기준으로 엑셀 파일 경로 설정
+base_dir = os.path.dirname(os.path.abspath(__file__))
+excel_path = os.path.join(base_dir, "절입일_1905_2100.xlsx")
+
+# 엑셀 파일 읽기
+solar_terms = pd.read_excel(excel_path)
 
 # 24절기 테이블 구성 (dict: 연도 -> 절기 -> datetime)
 def build_solar_terms_dict(df):
