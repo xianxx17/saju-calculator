@@ -51,6 +51,8 @@ def get_month_ganji(y, m, d):
     if not prev_term:
         return "정보 없음"
     used_date = prev_term[1] if prev_term else datetime(y, m, d)
+    if prev_term[0] not in solar_dict[y]:
+        return "정보 없음"
     idx = ((used_date.year - 1864) * 12 + list(solar_dict[y].keys()).index(prev_term[0])) % 60
     gan = "갑을병정무기경신임계"[idx % 10]
     ji = "자축인묘진사오미신유술해"[idx % 12]
