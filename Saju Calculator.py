@@ -9,7 +9,7 @@ from korean_lunar_calendar import KoreanLunarCalendar
 import os
 st.write("현재 실행 중인 경로:", os.getcwd())
 st.write("현재 경로의 파일 목록:", os.listdir())
-solar_terms = pd.read_excel(os.path.join(os.path.dirname(__file__), "절입일_1905_2100.xlsx"))
+solar_terms = pd.read_excel("절입일_1905_2100.xlsx")
 
 # 24절기 테이블 구성 (dict: 연도 -> 절기 -> datetime)
 def build_solar_terms_dict(df):
