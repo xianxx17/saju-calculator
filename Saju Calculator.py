@@ -11,7 +11,6 @@ import pandas as pd
 
 # 현재 파일의 절대 경로를 기준으로 Excel 파일 경로 설정
 excel_path = os.path.join(os.path.dirname(__file__), "절입일_1905_2100.xlsx")
-solar_terms = pd.read_excel(excel_path)
 
 # 엑셀 파일 읽기
 solar_terms = pd.read_excel(excel_path)
