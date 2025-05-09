@@ -2,15 +2,19 @@
 
 import streamlit as st
 import pandas as pd
-from datetime import datetime, timedelta
-from korean_lunar_calendar import KoreanLunarCalendar
 
-# 절입일 불러오기 (CSV 또는 Excel)
-import os
-import pandas as pd
+st.title("사주 명식 및 운세 계산기")
 
-# 현재 파일의 절대 경로를 기준으로 Excel 파일 경로 설정
-excel_path = os.path.join(os.path.dirname(__file__), "절입일_1905_2100.xlsx")
+uploaded_file = st.file_uploader("절입일 파일 업로드 (.xlsx)", type="xlsx")
+if uploaded_file:
+    solar_terms = pd.read_excel(uploaded_file)
+    st.success("엑셀 파일이 성공적으로 불러와졌습니다!")
+    
+    # 절입일 표시 예시
+    st.write("첫 줄 미리보기:")
+    st.write(solar_terms.head())
+else:
+    st.warning("절입일_1905_2100.xlsx 파일을 업로드해주세요.")
 
 # 엑셀 파일 읽기
 solar_terms = pd.read_excel(excel_path)
