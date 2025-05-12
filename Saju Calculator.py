@@ -1326,65 +1326,55 @@ if st.sidebar.button("🧮 계산 실행", use_container_width=True, type="prima
         else:
             st.warning("사주 기둥 중 일부가 정확히 계산되지 않아 오행 및 십신 분석을 수행할 수 없습니다.")
 
+       # (saju_app.py 파일의 if st.sidebar.button(...) 블록 내부 수정)
+
+        # ... (기존 명식 표시 st.table(ms_df) 및 st.caption(...) 다음 줄부터)
+
         # --- 오행 분석 표시 ---
         st.markdown("---") # 구분선
         st.subheader("🌳🔥 오행(五行) 분석")
-        if ohaeng_strengths and analysis_possible:
-            cols_ohaeng = st.columns(5)
-            ohaeng_box_colors = {"목": "#d1fae5", "화": "#fee2e2", "토": "#fef3c7", "금": "#e5e7eb", "수": "#dbeafe"}
-            ohaeng_text_colors = {"목": "#065f46", "화": "#991b1b", "토": "#92400e", "금": "#374151", "수": "#1e40af"}
+        if ohaeng_strengths and analysis_possible: # ohaeng_strengths는 이전 단계에서 계산된 딕셔너리
+            # 차트용 데이터 준비 (Pandas DataFrame)
+            # OHENG_ORDER 순서대로 표시하기 위해 reindex 사용
+            ohaeng_df_for_chart = pd.DataFrame.from_dict(
+                ohaeng_strengths, orient='index', columns=['세력']
+            ).reindex(OHENG_ORDER)
 
-            for i, oheng_name in enumerate(OHENG_ORDER):
-                with cols_ohaeng[i]:
-                    strength = ohaeng_strengths.get(oheng_name, 0.0)
-                    description = OHAENG_DESCRIPTIONS.get(oheng_name, "")
-                    hanja = OHENG_TO_HANJA.get(oheng_name, '')
-                    bg_color = ohaeng_box_colors.get(oheng_name, "#f0f0f0")
-                    text_color = ohaeng_text_colors.get(oheng_name, "#000000")
-                    
-                    st.markdown(f"""
-                    <div style="background-color: {bg_color}; color: {text_color}; padding: 15px; border-radius: 8px; text-align: center; height: 160px; display: flex; flex-direction: column; justify-content: center; margin-bottom:10px; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
-                        <strong style="font-size: 1.1em; margin-bottom: 5px;">{oheng_name}({hanja})</strong>
-                        <div style="font-size: 1.4em; font-weight: bold; margin: 5px 0;">{strength}</div>
-                        <small style="font-size: 0.85em; line-height: 1.3;">{description}</small>
-                    </div>
-                    """, unsafe_allow_html=True)
+            st.bar_chart(ohaeng_df_for_chart, height=300) # height는 조절 가능
+
+            # 오행별 기본 설명 (차트 아래 또는 옆에 둘 수 있음)
+            # 현재는 차트 아래에 요약 설명만 두겠습니다.
+            # 이전 박스에 있던 각 오행별 설명(예: 목 - 성장, 시작...)은 차트와 중복될 수 있어
+            # 요약 설명으로 대체하거나, 필요시 st.expander 등으로 다시 추가할 수 있습니다.
             
             ohaeng_summary_exp_text = get_ohaeng_summary_explanation(ohaeng_strengths)
             st.markdown(f"<div style='font-size: 0.95rem; color: #4b5563; margin-top: 1rem; padding: 0.75rem; background-color: #f9fafb; border-radius: 4px; border-left: 3px solid #60a5fa;'>{ohaeng_summary_exp_text}</div>", unsafe_allow_html=True)
-        elif analysis_possible: # 계산은 시도했으나 결과가 없는 경우 (거의 발생 안 함)
+        
+        elif analysis_possible:
              st.markdown("오행 강약 정보를 계산 중이거나 표시할 데이터가 없습니다.")
         # (analysis_possible이 False인 경우 이미 위에서 경고 메시지 표시됨)
+
 
         # --- 십신 분석 표시 ---
         st.markdown("---") # 구분선
         st.subheader("🌟 십신(十神) 분석")
-        if sipshin_strengths and analysis_possible:
-            # 10개의 십신을 2행 5열로 표시
-            row1_cols_sipshin = st.columns(5)
-            row2_cols_sipshin = st.columns(5)
-            
-            sipshin_display_slots = row1_cols_sipshin + row2_cols_sipshin # 총 10개의 컬럼 객체
+        if sipshin_strengths and analysis_possible: # sipshin_strengths는 이전 단계에서 계산된 딕셔너리
+            # 차트용 데이터 준비 (Pandas DataFrame)
+            # SIPSHIN_ORDER 순서대로 표시하기 위해 reindex 사용
+            sipshin_df_for_chart = pd.DataFrame.from_dict(
+                sipshin_strengths, orient='index', columns=['세력']
+            ).reindex(SIPSHIN_ORDER)
 
-            for i, sipshin_name in enumerate(SIPSHIN_ORDER):
-                with sipshin_display_slots[i]:
-                    strength = sipshin_strengths.get(sipshin_name, 0.0)
-                    text_color = SIPSHIN_COLORS.get(sipshin_name, "#333333") # 상수에서 정의한 색상 사용
-                    
-                    st.markdown(f"""
-                    <div style="background-color: #f9fafb; padding: 10px; border-radius: 6px; border: 1px solid #e5e7eb; text-align: center; margin-bottom: 10px; height: 100px; display: flex; flex-direction: column; justify-content: center; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
-                        <div style="font-weight: 500; font-size: 0.95em; color: {text_color}; margin-bottom: 5px;">{sipshin_name}</div>
-                        <div style="font-size: 1.3em; font-weight: bold; color: {text_color};">{strength}</div>
-                    </div>
-                    """, unsafe_allow_html=True)
-            
-            sipshin_summary_exp_text = get_sipshin_summary_explanation(sipshin_strengths, day_gan_char) # 일간 정보 전달
+            st.bar_chart(sipshin_df_for_chart, height=400) # 십신은 10개이므로 높이 조절
+
+            sipshin_summary_exp_text = get_sipshin_summary_explanation(sipshin_strengths, day_gan_char)
             st.markdown(f"<div style='font-size: 0.95rem; color: #4b5563; margin-top: 1rem; padding: 0.75rem; background-color: #f9fafb; border-radius: 4px; border-left: 3px solid #7c3aed;'>{sipshin_summary_exp_text}</div>", unsafe_allow_html=True)
 
         elif analysis_possible:
             st.markdown("십신 강약 정보를 계산 중이거나 표시할 데이터가 없습니다.")
         # (analysis_possible이 False인 경우 이미 위에서 경고 메시지 표시됨)
 
+        # ... (이어서 기존의 신강/신약 및 격국 분석 표시 부분 st.markdown("---") st.subheader(...) ...)
 # (saju_app.py 파일의 if st.sidebar.button(...) 블록 내부,
 #  기존 십신 분석 표시 부분 다음에 이어서 추가)
 
