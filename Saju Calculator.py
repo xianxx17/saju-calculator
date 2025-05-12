@@ -297,6 +297,238 @@ def get_gekuk_explanation(gekuk_name_str):
     return explanations.get(gekuk_name_str, f"'{gekuk_name_str}'에 대한 설명을 준비 중입니다. 일반적으로 해당 십신의 특성을 참고할 수 있습니다.")
 
 # ... (기존의 다른 함수들 get_saju_year, calculate_ohaeng_sipshin_strengths 등은 이 위 또는 아래에 위치) ...
+
+# ... (기존 get_gekuk_explanation 함수 등 다음 줄에)
+import itertools # 조합을 찾기 위해 임포트합니다. 스크립트 상단에 추가해도 됩니다.
+
+# ───────────────────────────────
+# 합충형해파 분석용 상수 정의
+# (사용자님이 제공해주신 HTML/JS 예제 코드의 규칙들을 기반으로 작성되었습니다)
+# ───────────────────────────────
+
+# 천간합 규칙: 합화 오행
+CHEONGAN_HAP_RULES = {
+    tuple(sorted(("갑", "기"))): "토", tuple(sorted(("을", "경"))): "금",
+    tuple(sorted(("병", "신"))): "수", tuple(sorted(("정", "임"))): "목",
+    tuple(sorted(("무", "계"))): "화"
+}
+
+# 지지 삼합 규칙: 국(局) 형성
+JIJI_SAMHAP_RULES = {
+    tuple(sorted(("신", "자", "진"))): "수국(水局)", tuple(sorted(("사", "유", "축"))): "금국(金局)",
+    tuple(sorted(("인", "오", "술"))): "화국(火局)", tuple(sorted(("해", "묘", "미"))): "목국(木局)"
+}
+# 지지 반합 규칙 (삼합의 왕지를 중심으로)
+# 키: 왕지, 값: [생지, 묘지] (이들과 왕지가 만나면 반합)
+JIJI_BANHAP_WANGJI_CENTERED_RULES = {
+    "자": ["신", "진"], "유": ["사", "축"],
+    "오": ["인", "술"], "묘": ["해", "미"]
+}
+
+# 지지 방합 규칙: 국(局) 형성
+JIJI_BANGHAP_RULES = {
+    tuple(sorted(("인", "묘", "진"))): "목국(木局)", tuple(sorted(("사", "오", "미"))): "화국(火局)",
+    tuple(sorted(("신", "유", "술"))): "금국(金局)", tuple(sorted(("해", "자", "축"))): "수국(水局)"
+}
+
+# 지지 육합 규칙: 합화 오행 (또는 관계)
+JIJI_YUKHAP_RULES = {
+    tuple(sorted(("자", "축"))): "토", tuple(sorted(("인", "해"))): "목",
+    tuple(sorted(("묘", "술"))): "화", tuple(sorted(("진", "유"))): "금",
+    tuple(sorted(("사", "신"))): "수", tuple(sorted(("오", "미"))): "화/토" # 오미합은 화 또는 토로 보거나, 기반 오행에 따라 달라짐
+}
+
+# 천간충 규칙
+CHEONGAN_CHUNG_RULES = [
+    tuple(sorted(("갑", "경"))), tuple(sorted(("을", "신"))),
+    tuple(sorted(("병", "임"))), tuple(sorted(("정", "계")))
+] # 무토, 기토는 충이 없음 (혹은 무임충, 기계충을 보기도 하나 JS 예제엔 없음)
+
+# 지지충 규칙
+JIJI_CHUNG_RULES = [
+    tuple(sorted(("자", "오"))), tuple(sorted(("축", "미"))),
+    tuple(sorted(("인", "신"))), tuple(sorted(("묘", "유"))),
+    tuple(sorted(("진", "술"))), tuple(sorted(("사", "해")))
+]
+
+# 지지 형살 규칙
+# 삼형
+SAMHYEONG_RULES = {
+    tuple(sorted(("인", "사", "신"))): "인사신 삼형(無恩之刑)", # 무은지형
+    tuple(sorted(("축", "술", "미"))): "축술미 삼형(持勢之刑)"  # 지세지형
+}
+# 상형 (자묘형)
+SANGHYEONG_RULES = [tuple(sorted(("자", "묘")))] # 자묘 상형(無禮之刑)
+# 자형 (같은 글자가 2개 이상일 때)
+JAHYEONG_CHARS = ["진", "오", "유", "해"]
+
+# 지지 해살(害殺) 규칙
+JIJI_HAE_RULES = [
+    tuple(sorted(("자", "미"))), tuple(sorted(("축", "오"))),
+    tuple(sorted(("인", "사"))), tuple(sorted(("묘", "진"))),
+    tuple(sorted(("신", "해"))), tuple(sorted(("유", "술")))
+]
+HAE_NAMES = {tuple(sorted(k)):v for k,v in {"자미":"자미해", "축오":"축오해", "인사":"인사회", "묘진":"묘진해", "신해":"신해해", "유술":"유술해"}.items()}
+
+
+# 지지 파살(破殺) 규칙
+JIJI_PA_RULES = [
+    tuple(sorted(("자", "유"))), tuple(sorted(("축", "진"))),
+    tuple(sorted(("인", "해"))), tuple(sorted(("묘", "오"))),
+    tuple(sorted(("사", "신"))), tuple(sorted(("술", "미")))
+]
+PA_NAMES = {tuple(sorted(k)):v for k,v in {"자유":"자유파", "축진":"축진파", "인해":"인해파", "묘오":"묘오파", "사신":"사신파", "술미":"술미파"}.items()}
+
+
+PILLAR_NAMES_KOR_SHORT = ["년", "월", "일", "시"] # 결과 출력 시 사용
+
+
+# ───────────────────────────────
+# 합충형해파 분석 함수
+# ───────────────────────────────
+def analyze_hap_chung_interactions(saju_8char_details):
+    """
+    사주팔자의 천간 및 지지 간의 합, 충, 형, 해, 파 관계를 분석합니다.
+    saju_8char_details: {"year_gan":yg, "year_ji":yj, ...} 형태의 딕셔너리
+    반환: {"천간합": ["결과 문자열 리스트"], "지지삼합": [], ...} 형태의 딕셔너리
+    """
+    gans = [saju_8char_details["year_gan"], saju_8char_details["month_gan"], saju_8char_details["day_gan"], saju_8char_details["time_gan"]]
+    jis = [saju_8char_details["year_ji"], saju_8char_details["month_ji"], saju_8char_details["day_ji"], saju_8char_details["time_ji"]]
+
+    results = {
+        "천간합": [], "지지육합": [], "지지삼합": [], "지지방합": [],  # 합(合)
+        "천간충": [], "지지충": [],                               # 충(沖)
+        "형살(刑殺)": [], "해살(害殺)": [], "파살(破殺)": []          # 형해파(刑害破)
+    }
+    
+    # 중복 방지를 위한 세트들 (JS 예제 참고)
+    found_samhap_banhap_combinations = set() # 삼합, 반합은 같은 지지 조합을 다르게 표현할 수 있으므로 중복 방지
+
+    # 0. 위치 정보와 함께 간/지 리스트 생성
+    # (인덱스, 천간/지지 글자, 기둥이름) 형태의 튜플 리스트
+    gans_with_pos = list(enumerate(gans)) # [(0, '갑'), (1, '병'), ...]
+    jis_with_pos = list(enumerate(jis))   # [(0, '자'), (1, '인'), ...]
+
+    # 1. 천간합 / 천간충 (2개 조합)
+    for (i_idx, i_gan), (j_idx, j_gan) in itertools.combinations(gans_with_pos, 2):
+        pair_sorted = tuple(sorted((i_gan, j_gan)))
+        pos_str = f"{PILLAR_NAMES_KOR_SHORT[i_idx]}간({i_gan}) + {PILLAR_NAMES_KOR_SHORT[j_idx]}간({j_gan})"
+        
+        if pair_sorted in CHEONGAN_HAP_RULES:
+            results["천간합"].append(f"{pos_str} → {CHEONGAN_HAP_RULES[pair_sorted]} 합")
+        if pair_sorted in CHEONGAN_CHUNG_RULES:
+            results["천간충"].append(f"{pos_str.replace('+', '↔')} 충")
+
+    # 2. 지지육합 / 지지충 / 지지해 / 지지파 (2개 조합)
+    for (i_idx, i_ji), (j_idx, j_ji) in itertools.combinations(jis_with_pos, 2):
+        pair_sorted = tuple(sorted((i_ji, j_ji)))
+        pos_str = f"{PILLAR_NAMES_KOR_SHORT[i_idx]}지({i_ji}) + {PILLAR_NAMES_KOR_SHORT[j_idx]}지({j_ji})"
+        
+        if pair_sorted in JIJI_YUKHAP_RULES:
+            results["지지육합"].append(f"{pos_str} → {JIJI_YUKHAP_RULES[pair_sorted]} 합")
+        if pair_sorted in JIJI_CHUNG_RULES:
+            results["지지충"].append(f"{pos_str.replace('+', '↔')} 충")
+        if pair_sorted in JIJI_HAE_RULES:
+            results["해살(害殺)"].append(f"{pos_str} → {HAE_NAMES.get(pair_sorted, '해')}")
+        if pair_sorted in JIJI_PA_RULES:
+            results["파살(破殺)"].append(f"{pos_str} → {PA_NAMES.get(pair_sorted, '파')}")
+        
+        # 자묘 상형 체크
+        if pair_sorted in SANGHYEONG_RULES:
+             results["형살(刑殺)"].append(f"{pos_str} → 자묘 상형(無禮之刑)")
+
+
+    # 3. 지지삼합 / 지지방합 / 지지삼형 (3개 조합)
+    for (i_idx, i_ji), (j_idx, j_ji), (k_idx, k_ji) in itertools.combinations(jis_with_pos, 3):
+        combo_sorted = tuple(sorted((i_ji, j_ji, k_ji)))
+        # 위치 문자열 만들 때, 실제 인덱스 순서대로 표시하는 것이 좋으나, 일단 정렬된 지지 순서대로
+        pos_str = f"{PILLAR_NAMES_KOR_SHORT[i_idx]}지({i_ji}), {PILLAR_NAMES_KOR_SHORT[j_idx]}지({j_ji}), {PILLAR_NAMES_KOR_SHORT[k_idx]}지({k_ji})"
+        
+        if combo_sorted in JIJI_SAMHAP_RULES:
+            # 삼합이 성립되면, 이 조합을 기록하여 반합 중복 방지에 사용
+            found_samhap_banhap_combinations.add(combo_sorted) 
+            results["지지삼합"].append(f"{pos_str} → {JIJI_SAMHAP_RULES[combo_sorted]}")
+        if combo_sorted in JIJI_BANGHAP_RULES:
+            results["지지방합"].append(f"{pos_str} → {JIJI_BANGHAP_RULES[combo_sorted]}")
+        if combo_sorted in SAMHYEONG_RULES:
+            results["형살(刑殺)"].append(f"{pos_str} → {SAMHYEONG_RULES[combo_sorted]}")
+
+    # 4. 지지반합 (삼합에 포함되지 않은 반합만 찾기, JS 예제 로직 참고)
+    for (i_idx, i_ji), (j_idx, j_ji) in itertools.combinations(jis_with_pos, 2):
+        pos_str = f"{PILLAR_NAMES_KOR_SHORT[i_idx]}지({i_ji}) + {PILLAR_NAMES_KOR_SHORT[j_idx]}지({j_ji})"
+        
+        for wangji, others in JIJI_BANHAP_WANGJI_CENTERED_RULES.items():
+            # 반합 조건: (i_ji가 왕지이고 j_ji가 others에 속함) 또는 (j_ji가 왕지이고 i_ji가 others에 속함)
+            if (i_ji == wangji and j_ji in others) or \
+               (j_ji == wangji and i_ji in others):
+                
+                # 이 반합이 이미 발견된 삼합의 일부인지 확인
+                is_part_of_samhap = False
+                potential_samhap_members = {i_ji, j_ji}
+                # 나머지 하나의 삼합 멤버 찾기 (왕지, 생지, 묘지 중 빠진 것)
+                full_samhap_group = None
+                for samhap_key_tuple in JIJI_SAMHAP_RULES.keys():
+                    if wangji in samhap_key_tuple and (i_ji in samhap_key_tuple and j_ji in samhap_key_tuple):
+                        full_samhap_group = samhap_key_tuple
+                        break
+                
+                if full_samhap_group and full_samhap_group in found_samhap_banhap_combinations:
+                    is_part_of_samhap = True
+                    
+                if not is_part_of_samhap:
+                    # 중복된 반합 문자열 방지 (예: 년지(자)+월지(신) vs 월지(신)+년지(자))
+                    # 반합 결과 문자열을 정렬된 기준으로 만들어 중복 체크
+                    sorted_banhap_key = tuple(sorted((i_ji, j_ji))) 
+                    banhap_result_str = f"{pos_str} → {wangji} 기준 반합 ({JIJI_SAMHAP_RULES.get(full_samhap_group, '국 형성')})"
+                    
+                    # 반합 결과를 저장하고, 중복을 피하기 위해 found_samhap_banhap_combinations에 (정렬된 키, 결과문자열) 추가
+                    # 여기서는 결과 문자열 자체로 중복을 피하기보다, 반합이 발생했다는 사실로 기록
+                    if not any(banhap_result_str == item for item in results["지지삼합"]): # 이미 삼합으로 기록된 경우 제외
+                         # 삼합의 하위 개념이므로, 삼합 리스트에 "반합"으로 명시하여 추가
+                         results["지지삼합"].append(banhap_result_str)
+                break # 해당 pair에 대한 반합 찾았으므로 다음 pair로
+
+    # 5. 자형(自刑)
+    for jahyeong_char in JAHYEONG_CHARS:
+        count = jis.count(jahyeong_char)
+        if count >= 2:
+            positions = [f"{PILLAR_NAMES_KOR_SHORT[i]}지({jis[i]})" for i, ji_val in enumerate(jis) if ji_val == jahyeong_char]
+            results["형살(刑殺)"].append(f"{', '.join(positions)} ({jahyeong_char}{jahyeong_char}) → 자형(自刑)")
+            
+    return results
+
+
+def get_hap_chung_detail_explanation(found_interactions_dict):
+    """발견된 합충형해파 종류에 따라 간단한 설명을 반환합니다."""
+    if not found_interactions_dict or not any(v for v in found_interactions_dict.values()):
+        return "<p>특별히 두드러지는 합충형해파의 관계가 나타나지 않습니다. 비교적 안정적인 구조일 수 있습니다.</p>"
+
+    explanation_parts = []
+    # HTML 예제의 설명을 기반으로 각 상호작용 타입에 대한 설명 추가
+    interaction_explanations = {
+        "천간합": "정신적, 사회적 관계에서의 연합, 변화 또는 새로운 기운의 생성 가능성을 나타냅니다.",
+        "지지육합": "개인적인 관계, 애정, 또는 비밀스러운 합의나 내부적인 결속을 의미할 수 있습니다.",
+        "지지삼합": "강력한 사회적 합으로, 특정 목표를 향한 강력한 추진력이나 세력 형성을 나타냅니다. (반합 포함)",
+        "지지방합": "가족, 지역, 동료 등 혈연이나 지연에 기반한 강한 결속력이나 세력 확장을 의미합니다.",
+        "천간충": "생각의 충돌, 가치관의 대립, 또는 외부 환경으로부터의 갑작스러운 변화나 자극, 정신적 스트레스를 암시합니다.",
+        "지지충": "현실적인 변화, 이동, 관계의 단절 또는 새로운 시작, 건강상의 주의 등을 나타낼 수 있습니다. 역동적인 사건의 발생 가능성을 의미합니다.",
+        "형살(刑殺)": "조정, 갈등, 법적 문제, 수술, 배신, 또는 내적 갈등과 성장통 등을 나타낼 수 있습니다. 때로는 정교함이나 전문성을 요구하는 일과도 관련됩니다.",
+        "해살(害殺)": "관계에서의 방해, 질투, 오해, 또는 건강상의 문제(주로 만성적) 등을 암시합니다. 예기치 않은 손실이나 어려움을 겪을 수 있습니다.",
+        "파살(破殺)": "깨짐, 분리, 손상, 계획의 차질, 관계의 갑작스러운 단절 등을 나타낼 수 있습니다. 기존의 것이 깨지고 새로워지는 과정을 의미하기도 합니다."
+    }
+    
+    for key, found_list in found_interactions_dict.items():
+        if found_list: # 해당 상호작용이 하나라도 발견되었다면
+            desc = interaction_explanations.get(key)
+            if desc:
+                explanation_parts.append(f"<li><strong>{key}:</strong> {desc}</li>")
+    
+    if not explanation_parts:
+        return "<p>구체적인 합충형해파 관계에 대한 설명을 준비 중입니다.</p>"
+        
+    return "<ul style='list-style-type: disc; margin-left: 20px; padding-left: 0;'>" + "".join(explanation_parts) + "</ul>"
+
+# ... (기존의 다른 함수들 determine_shinkang_shinyak, determine_gekuk 등은 이 위 또는 아래에 위치) ...
 # ───────────────────────────────
 # 오행 및 십신 세력 계산 함수
 # ───────────────────────────────
