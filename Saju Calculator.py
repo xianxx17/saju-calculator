@@ -1052,7 +1052,61 @@ if st.sidebar.button("🧮 계산 실행", use_container_width=True, type="prima
             </div>
             """, unsafe_allow_html=True)
         
-        # ... (이어서 기존의 대운, 세운 등 운세 정보 표시 부분) ...        
+       
+#  기존 신강/신약 및 격국 분석 표시 부분 다음에 이어서 추가)
+
+        # ... (이전 격국 분석 st.markdown(...) 코드 다음 줄부터)
+
+        # --- 합충형해파(合沖刑害破) 분석 ---
+        st.markdown("---") # 구분선
+        st.subheader("🤝💥 합충형해파 분석") # 아이콘은 예시입니다.
+
+        # saju_8char_for_analysis 딕셔너리가 이미 상단에서 정의 및 사용 가능해야 합니다.
+        # (year_gan_char, year_ji_char 등이 포함된 딕셔너리)
+
+        if analysis_possible and 'day_gan_char' in locals() and day_gan_char : # day_gan_char 등 주요 변수가 있는지 한번 더 확인
+            try:
+                hap_chung_results_dict = analyze_hap_chung_interactions(saju_8char_for_analysis)
+                
+                has_any_hap_chung_interaction = any(v for v in hap_chung_results_dict.values())
+
+                if has_any_hap_chung_interaction:
+                    st.markdown("##### 발견된 주요 상호작용:")
+                    # 각 타입별로 결과 리스트를 Markdown으로 변환하여 표시
+                    # HTML/CSS를 사용하여 리스트 아이템 스타일링 (JS 예제 참고)
+                    output_html_parts = []
+                    for interaction_type, found_list in hap_chung_results_dict.items():
+                        if found_list:
+                            output_html_parts.append(f"<h6 style='color: #374151; margin-top: 0.6rem; margin-bottom: 0.2rem; font-size:0.95em;'>{interaction_type}</h6>")
+                            items_html = "".join([f"<li style='background-color: #eef2ff; color: #312e81; padding: 0.3rem 0.6rem; border-radius: 0.25rem; margin-bottom: 0.25rem; font-size: 0.9rem;'>{item}</li>" for item in found_list])
+                            output_html_parts.append(f"<ul style='list-style: none; padding-left: 0; margin-bottom: 0.5rem;'>{items_html}</ul>")
+                    
+                    if output_html_parts:
+                        st.markdown("".join(output_html_parts), unsafe_allow_html=True)
+                    else: # 모든 리스트가 비어있는 희귀한 경우 (has_any_hap_chung_interaction이 True인데 여기가 실행될 일은 거의 없음)
+                        st.markdown("<p style='font-size:0.95rem; color:#4b5563;'>특별히 기록할 만한 합충형해파 관계가 없습니다.</p>", unsafe_allow_html=True)
+
+                    # 전체 요약 설명
+                    hap_chung_explanation_html = get_hap_chung_detail_explanation(hap_chung_results_dict)
+                    st.markdown(f"<div style='font-size: 0.95rem; color: #4b5563; margin-top: 1rem; padding: 0.75rem; background-color: #f9fafb; border-radius: 4px; border-left: 3px solid #f59e0b;'>{hap_chung_explanation_html}</div>", unsafe_allow_html=True)
+                
+                else: # any() 에서 False가 나온 경우 (모든 결과 리스트가 비어있음)
+                    st.markdown("<p style='font-size:0.95rem; color:#4b5563;'>특별히 두드러지는 합충형해파의 관계가 나타나지 않습니다. 비교적 안정적인 구조일 수 있습니다.</p>", unsafe_allow_html=True)
+
+            except Exception as e:
+                st.warning(f"합충형해파 분석 중 오류 발생: {e}")
+                st.markdown("<p style='font-size:0.95rem; color:#b91c1c;'>합충형해파 분석 중 오류가 발생하여 결과를 표시할 수 없습니다.</p>", unsafe_allow_html=True)
+        
+        elif not analysis_possible:
+            # 이미 상단에서 "사주 기둥 중 일부가 정확히 계산되지 않아..." 경고가 표시되었을 것입니다.
+            # 여기서 추가적인 메시지는 생략합니다.
+            pass
+        else: # analysis_possible은 True인데, day_gan_char 같은 주요 변수가 없는 경우 (로직상 거의 발생 안함)
+            st.info("사주 정보가 부족하여 합충형해파 분석을 수행할 수 없습니다.")
+
+
+        # ... (이어서 기존의 대운, 세운 등 운세 정보 표시 부분 st.markdown("---") st.subheader(f"運 대운 ({gender})") ...)
+        
 
         # --- 대운, 세운 등 기존 운세 정보 표시 (이전과 동일) ---
         st.markdown("---") # 구분선
