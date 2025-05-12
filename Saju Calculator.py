@@ -107,6 +107,196 @@ SIPSHIN_COLORS = {
 }
 
 
+# ... (기존 OHENG_DESCRIPTIONS, SIPSHIN_COLORS 등 상수 정의 이후) ...
+
+# ───────────────────────────────
+# 신강/신약 및 격국 분석용 상수 추가
+# ───────────────────────────────
+
+# 건록격 판단용 (HTML 예제 L 상수 기반: 일간 -> 건록에 해당하는 지지)
+# 참고: 일반적인 건록 정의(예: 갑->인)와 다를 수 있으나, 제공해주신 JS 코드 기준을 따릅니다.
+L_NOK_MAP = {
+    "갑": "묘", "을": "인", "병": "사", "정": "오", 
+    "무": "진", "기": "축", "경": "유", "신": "신", 
+    "임": "해", "계": "자"
+}
+
+# 양인격 판단용 (HTML 예제 yangin_map 기반: 양일간 -> 양인에 해당하는 지지)
+YANGIN_JI_MAP = {
+    "갑": "묘",  # 양일간 갑목의 양인은 묘목
+    "병": "오",  # 양일간 병화의 양인은 오화
+    "무": "오",  # 양일간 무토의 양인은 오화 (화토동법)
+    "경": "유",  # 양일간 경금의 양인은 유금
+    "임": "자"   # 양일간 임수의 양인은 자수
+} # (음일간은 보통 양인격으로 논하지 않음)
+
+# 십신 이름을 격국 이름으로 매핑 (일반격 판단 시 사용)
+SIPSHIN_TO_GYEOK_MAP = {
+    '비견':'비견격', '겁재':'겁재격', # 참고: 겁재격은 양인격과 구분되기도 함
+    '식신':'식신격', '상관':'상관격',
+    '편재':'편재격', '정재':'정재격',
+    '편관':'칠살격', '정관':'정관격', # 편관은 칠살격으로도 불림
+    '편인':'편인격', '정인':'정인격'
+}
+
+
+# ───────────────────────────────
+# 신강/신약 판단 및 설명 함수
+# ───────────────────────────────
+def determine_shinkang_shinyak(sipshin_strengths):
+    """
+    십신 세력값을 바탕으로 일간의 신강/신약을 판단합니다.
+    (HTML 예제의 shinkang 함수 로직 기반)
+    """
+    # 일간을 돕는 기운: 비견, 겁재 (나와 같은 오행), 편인, 정인 (나를 생하는 오행)
+    my_energy = (sipshin_strengths.get("비견", 0.0) +
+                 sipshin_strengths.get("겁재", 0.0) +
+                 sipshin_strengths.get("편인", 0.0) +
+                 sipshin_strengths.get("정인", 0.0))
+    
+    # 일간의 힘을 빼는 기운: 식신, 상관 (내가 생하는 오행), 편재, 정재 (내가 극하는 오행), 편관, 정관 (나를 극하는 오행)
+    opponent_energy = (sipshin_strengths.get("식신", 0.0) +
+                       sipshin_strengths.get("상관", 0.0) +
+                       sipshin_strengths.get("편재", 0.0) +
+                       sipshin_strengths.get("정재", 0.0) +
+                       sipshin_strengths.get("편관", 0.0) +
+                       sipshin_strengths.get("정관", 0.0))
+    
+    score_diff = my_energy - opponent_energy
+    
+    # HTML 예제 코드의 기준값을 따름
+    if score_diff >= 1.5: return "신강"
+    elif score_diff <= -1.5: return "신약"
+    elif -0.5 <= score_diff <= 0.5: return "중화" 
+    elif score_diff > 0.5: return "약간 신강" # 0.5 < score_diff < 1.5
+    else: return "약간 신약" # -1.5 < score_diff < -0.5
+
+def get_shinkang_explanation(shinkang_status_str):
+    """신강/신약 상태에 대한 설명을 반환합니다."""
+    explanations = {
+        "신강": "일간(자신)의 힘이 강한 편입니다. 주체적이고 독립적인 성향이 강하며, 자신의 의지대로 일을 추진하는 힘이 있습니다. 때로는 자기 주장이 강해 주변과의 마찰이 생길 수 있으니 유연성을 갖추는 것이 좋습니다.",
+        "신약": "일간(자신)의 힘이 다소 약한 편입니다. 주변의 도움이나 환경의 영향에 민감하며, 신중하고 사려 깊은 모습을 보일 수 있습니다. 자신감을 갖고 꾸준히 자신의 역량을 키워나가는 것이 중요하며, 좋은 운의 흐름을 잘 활용하는 지혜가 필요합니다.",
+        "중화": "일간(자신)의 힘이 비교적 균형을 이루고 있습니다. 상황에 따라 유연하게 대처하는 능력이 있으며, 원만한 대인관계를 맺을 수 있는 좋은 구조입니다. 다만, 때로는 뚜렷한 개성이 부족해 보일 수도 있습니다.",
+        "약간 신강": "일간(자신)의 힘이 평균보다 조금 강한 편입니다. 자신의 주관을 가지고 일을 처리하면서도 주변과 협력하는 균형 감각을 발휘할 수 있습니다.",
+        "약간 신약": "일간(자신)의 힘이 평균보다 조금 약한 편입니다. 신중하고 주변 상황을 잘 살피며, 인내심을 가지고 목표를 추구하는 경향이 있습니다. 주변의 조언을 경청하는 자세가 도움이 될 수 있습니다."
+    }
+    return explanations.get(shinkang_status_str, "일간의 강약 상태에 대한 설명을 준비 중입니다.")
+
+# ───────────────────────────────
+# 격국 판단 함수들 (HTML 예제 final_gekuk 및 관련 함수 로직 기반)
+# ───────────────────────────────
+def _detect_special_gekuk(day_gan_char, month_ji_char):
+    """특별격(건록격, 양인격)을 우선적으로 판단합니다."""
+    # 건록격: 일간의 건록(祿)이 월지에 있을 때
+    if L_NOK_MAP.get(day_gan_char) == month_ji_char:
+        return "건록격"
+    # 양인격: 양일간의 양인(羊刃)이 월지에 있을 때
+    if day_gan_char in YANGIN_JI_MAP and YANGIN_JI_MAP.get(day_gan_char) == month_ji_char:
+        return "양인격"
+    return None
+
+def _detect_togan_gekuk(day_gan_char, month_gan_char, month_ji_char):
+    """월지의 지장간 중에서 월간에 투간(透干)한 것을 기준으로 격을 정합니다."""
+    if month_ji_char in JIJI_JANGGAN: # JIJI_JANGGAN는 이미 정의된 상수
+        hidden_stems_in_month_ji = JIJI_JANGGAN[month_ji_char]
+        if month_gan_char in hidden_stems_in_month_ji: # 월간이 월지 지장간에 포함(투간)된 경우
+            # 투간된 월간을 기준으로 일간과의 관계(십신)를 파악하여 격을 정함
+            sipshin_type = SIPSHIN_MAP.get(day_gan_char, {}).get(month_gan_char) # SIPSHIN_MAP도 이미 정의
+            if sipshin_type:
+                return SIPSHIN_TO_GYEOK_MAP.get(sipshin_type, sipshin_type + "격")
+    return None
+
+def _detect_general_gekuk_from_month_branch_primary(day_gan_char, month_ji_char):
+    """월지 지장간 중 가장 세력이 강한 정기(正氣 또는 本氣)를 기준으로 격을 정합니다."""
+    if month_ji_char in JIJI_JANGGAN:
+        hidden_stems = JIJI_JANGGAN[month_ji_char]
+        if hidden_stems:
+            # 지장간 중 비율(세력)이 가장 높은 것을 본기로 간주 (HTML 예제 ZW의 값 비교 로직 참고)
+            primary_hidden_stem = None
+            max_ratio = -1 # 비율은 항상 0 이상이므로 -1로 시작
+            for stem, ratio in hidden_stems.items():
+                if ratio > max_ratio:
+                    max_ratio = ratio
+                    primary_hidden_stem = stem
+            
+            if primary_hidden_stem:
+                sipshin_type = SIPSHIN_MAP.get(day_gan_char, {}).get(primary_hidden_stem)
+                if sipshin_type:
+                    return SIPSHIN_TO_GYEOK_MAP.get(sipshin_type, sipshin_type + "격")
+    return None
+
+def _detect_general_gekuk_from_strengths(sipshin_strengths_dict):
+    """위 방법들로 격을 정할 수 없을 때, 사주 전체의 십신 세력 중 가장 강한 것을 기준으로 격을 정합니다. (억부격과 유사)"""
+    if not sipshin_strengths_dict: return None
+    
+    strongest_sipshin_name = None
+    max_strength = -1 
+
+    # SIPSHIN_ORDER 순서대로 순회하며 가장 강한 십신을 찾음 (HTML 예제와 동일한 순서로)
+    for sipshin_name in SIPSHIN_ORDER: # SIPSHIN_ORDER는 이미 정의된 상수
+        strength_val = sipshin_strengths_dict.get(sipshin_name, 0.0)
+        if strength_val > max_strength:
+            max_strength = strength_val
+            strongest_sipshin_name = sipshin_name
+            
+    if strongest_sipshin_name and max_strength > 0.5: # HTML 예제에서는 0.5를 기준으로 함
+        # 비견격/겁재격은 보통 특별격(건록/양인)에 해당하지 않을 때 고려
+        # HTML 예제에서는 이들도 일반격으로 매핑함
+        return SIPSHIN_TO_GYEOK_MAP.get(strongest_sipshin_name, strongest_sipshin_name + "격")
+    return "일반격 판정 어려움" # HTML 예제 참고
+
+
+def determine_gekuk(day_gan_char, month_gan_char, month_ji_char, sipshin_strengths_dict):
+    """격국을 판단하는 메인 함수 (HTML 예제 final_gekuk 로직 순서 참고)"""
+    # 1. 특별격 (건록격, 양인격) 우선 판단
+    special_gekuk = _detect_special_gekuk(day_gan_char, month_ji_char)
+    if special_gekuk:
+        return special_gekuk
+    
+    # 2. 월간이 월지 지장간에서 투간했는지 여부로 격 판단
+    togan_gekuk = _detect_togan_gekuk(day_gan_char, month_gan_char, month_ji_char)
+    if togan_gekuk:
+        return togan_gekuk
+        
+    # 3. 월지 지장간의 본기(정기)를 기준으로 격 판단
+    month_branch_primary_gekuk = _detect_general_gekuk_from_month_branch_primary(day_gan_char, month_ji_char)
+    if month_branch_primary_gekuk:
+        return month_branch_primary_gekuk
+        
+    # 4. 위 방법으로 격을 정하기 어려울 때, 사주 전체 십신 세력을 기준으로 판단 (HTML 예제 로직)
+    strength_based_gekuk = _detect_general_gekuk_from_strengths(sipshin_strengths_dict)
+    if strength_based_gekuk and strength_based_gekuk != "일반격 판정 어려움":
+        return strength_based_gekuk
+    elif strength_based_gekuk == "일반격 판정 어려움":
+        return strength_based_gekuk # 이 메시지 자체를 결과로 반환
+        
+    return "격국 판정 불가" # 모든 조건에 해당하지 않을 경우
+
+def get_gekuk_explanation(gekuk_name_str):
+    """격국 이름에 대한 설명을 반환합니다."""
+    # HTML 예제의 설명을 기반으로 작성
+    explanations = {
+        '건록격': '스스로 자립하여 성공하는 자수성가형 리더 타입입니다! 굳건하고 독립적인 성향을 가졌습니다. (주로 월지에 일간의 건록이 있는 경우)',
+        '양인격': '강력한 카리스마와 돌파력을 지녔습니다! 때로는 너무 강한 기운으로 인해 조절이 필요할 수 있지만, 큰일을 해낼 수 있는 저력이 있습니다. (주로 월지에 양일간의 양인이 있는 경우)',
+        '비견격': '주체성이 강하고 동료들과 협력하며 목표를 향해 나아가는 타입입니다. 독립심과 자존감이 강한 편입니다.',
+        '겁재격': '승부욕과 경쟁심이 강하며, 때로는 과감한 도전도 불사하는 적극적인 면모가 있습니다. 주변과의 협력과 조화를 중요시해야 합니다.',
+        '식신격': '낙천적이고 창의적인 아이디어가 풍부하며, 표현력이 좋고 예술적 재능을 지녔을 수 있습니다. 안정적인 의식주를 중시하는 경향이 있습니다.',
+        '상관격': '새로운 것을 탐구하고 기존의 틀을 깨려는 혁신가적 기질이 있습니다. 비판적이고 날카로운 통찰력을 지녔지만, 때로는 표현 방식에 유의하여 오해를 피하는 것이 좋습니다.',
+        '편재격': '활동적이고 사교성이 뛰어나며 사람들과 어울리는 것을 좋아합니다. 재물에 대한 감각과 운용 능력이 뛰어나며, 스케일이 크고 통이 큰 경향이 있습니다.',
+        '정재격': '꼼꼼하고 성실하며 안정적인 것을 선호합니다. 신용을 중요하게 생각하고 계획적인 삶을 추구하며, 재물을 안정적으로 관리하는 능력이 있습니다.',
+        '칠살격': '명예를 중시하고 리더십이 있으며, 어려운 상황을 극복하고 위기에서 능력을 발휘하는 카리스마가 있습니다. (편관격과 유사)', # 편관격으로 통일해도 무방
+        '정관격': '원칙을 지키는 반듯하고 합리적인 성향입니다. 명예와 안정을 추구하며 조직 생활에 잘 적응하고 책임감이 강합니다.',
+        '편인격': '직관력과 예지력이 뛰어나며, 독특한 아이디어나 예술, 철학, 종교 등 정신적인 분야에 재능을 보일 수 있습니다. 다소 생각이 많거나 변덕스러울 수 있습니다.',
+        '정인격': '학문과 지식을 사랑하고 인정이 많으며 수용성이 좋습니다. 안정적인 환경에서 능력을 발휘하며, 타인에게 도움을 주는 것을 좋아합니다.',
+        '일반격 판정 어려움': '사주의 기운이 복합적이거나 특정 십신의 세력이 두드러지게 나타나지 않아, 하나의 주된 격국으로 정의하기 어렵습니다. 다양한 가능성을 가진 사주로 볼 수 있으며, 운의 흐름에 따라 여러 격의 특성이 발현될 수 있습니다.',
+        '격국 판정 불가': '사주의 구조상 특정 격국을 명확히 판정하기 어렵습니다. 이 경우, 사주 전체의 오행 및 십신 분포, 운의 흐름 등을 종합적으로 고려하여 판단하는 것이 좋습니다.'
+    }
+    # 편관격과 칠살격이 같은 의미로 사용될 수 있으므로, 칠살격 요청 시 편관격 설명으로 대체 가능
+    if gekuk_name_str == '편관격': gekuk_name_str = '칠살격' # 또는 그 반대
+    
+    return explanations.get(gekuk_name_str, f"'{gekuk_name_str}'에 대한 설명을 준비 중입니다. 일반적으로 해당 십신의 특성을 참고할 수 있습니다.")
+
+# ... (기존의 다른 함수들 get_saju_year, calculate_ohaeng_sipshin_strengths 등은 이 위 또는 아래에 위치) ...
 # ───────────────────────────────
 # 오행 및 십신 세력 계산 함수
 # ───────────────────────────────
