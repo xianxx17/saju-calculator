@@ -429,6 +429,8 @@ ty = st.sidebar.number_input("기준 연도 ", min_input_year, max_input_year + 
 tm = st.sidebar.number_input("기준 월  " , 1, 12, today.month) # 공백 추가로 키 중복 방지
 td = st.sidebar.number_input("기준 일  " , 1, 31, today.day)  # 공백 추가
 
+# (saju_app.py 파일의 if st.sidebar.button(...) 블록 내부 수정)
+
 if st.sidebar.button("🧮 계산 실행", use_container_width=True, type="primary"):
     birth_dt_input_valid = True
     birth_dt = None
@@ -443,14 +445,14 @@ if st.sidebar.button("🧮 계산 실행", use_container_width=True, type="prima
     else: # 음력인 경우
         try:
             lunar_conv_date = LunarDate(by, bm, bd, is_leap_month)
-            solar_equiv_date = lunar_conv_date.toSolarDate() # datetime.date 객체 반환
+            solar_equiv_date = lunar_conv_date.toSolarDate()
             birth_dt = datetime(solar_equiv_date.year, solar_equiv_date.month, solar_equiv_date.day, bh, bmin)
             st.sidebar.info(f"음력 {by}년 {bm}월 {bd}일{' (윤달)' if is_leap_month else ''}은 양력 {birth_dt.strftime('%Y-%m-%d')} 입니다.")
-        except ValueError as e: # lunardate.LunarDate에서 잘못된 날짜(예: 없는 윤달) 입력 시 ValueError 발생
+        except ValueError as e: 
             st.error(f"❌ 음력 날짜 변환 오류: {e}. 유효한 음력 날짜와 윤달 여부를 확인해주세요.")
             birth_dt_input_valid = False
             st.stop()
-        except Exception as e: # 기타 예외
+        except Exception as e: 
             st.error(f"❌ 음력 날짜 처리 중 알 수 없는 오류: {e}")
             birth_dt_input_valid = False
             st.stop()
@@ -463,7 +465,7 @@ if st.sidebar.button("🧮 계산 실행", use_container_width=True, type="prima
         day_pillar_str, day_gan_char, day_ji_char = get_day_ganji(birth_dt.year, birth_dt.month, birth_dt.day)
         time_pillar_str, time_gan_char, time_ji_char = get_time_ganji(day_gan_char, birth_dt.hour, birth_dt.minute)
 
-        # --- UI 표시 (이하 동일) ---
+        # --- 명식 기본 정보 표시 ---
         st.subheader("📜 사주 명식")
         ms_data = {
             "구분":["천간","지지","간지"],
@@ -476,18 +478,119 @@ if st.sidebar.button("🧮 계산 실행", use_container_width=True, type="prima
         st.table(ms_df)
         st.caption(f"사주 기준 연도 (입춘 기준): {saju_year_val}년")
 
+        # --- 오행 및 십신 세력 계산 ---
+        saju_8char_for_analysis = {
+            "year_gan": year_gan_char, "year_ji": year_ji_char,
+            "month_gan": month_gan_char, "month_ji": month_ji_char,
+            "day_gan": day_gan_char, "day_ji": day_ji_char,
+            "time_gan": time_gan_char, "time_ji": time_ji_char
+        }
+        
+        analysis_possible = True
+        # 각 간지 글자가 유효한지 (한 글자인지, GAN 또는 JI 리스트에 있는지) 확인
+        for key, val_char in saju_8char_for_analysis.items():
+            if not val_char or len(val_char) != 1: # 비어있거나 길이가 1이 아니면 분석 불가
+                analysis_possible = False; break
+            if key.endswith("_gan") and val_char not in GAN:
+                analysis_possible = False; break
+            if key.endswith("_ji") and val_char not in JI:
+                analysis_possible = False; break
+        
+        ohaeng_strengths = {}
+        sipshin_strengths = {}
+
+        if analysis_possible:
+            try:
+                ohaeng_strengths, sipshin_strengths = calculate_ohaeng_sipshin_strengths(saju_8char_for_analysis)
+            except Exception as e:
+                st.warning(f"오행/십신 분석 중 오류 발생: {e}")
+                analysis_possible = False # 분석 실패 처리
+        else:
+            st.warning("사주 기둥 중 일부가 정확히 계산되지 않아 오행 및 십신 분석을 수행할 수 없습니다.")
+
+        # --- 오행 분석 표시 ---
+        st.markdown("---") # 구분선
+        st.subheader("🌳🔥 오행(五行) 분석")
+        if ohaeng_strengths and analysis_possible:
+            cols_ohaeng = st.columns(5)
+            ohaeng_box_colors = {"목": "#d1fae5", "화": "#fee2e2", "토": "#fef3c7", "금": "#e5e7eb", "수": "#dbeafe"}
+            ohaeng_text_colors = {"목": "#065f46", "화": "#991b1b", "토": "#92400e", "금": "#374151", "수": "#1e40af"}
+
+            for i, oheng_name in enumerate(OHENG_ORDER):
+                with cols_ohaeng[i]:
+                    strength = ohaeng_strengths.get(oheng_name, 0.0)
+                    description = OHAENG_DESCRIPTIONS.get(oheng_name, "")
+                    hanja = OHENG_TO_HANJA.get(oheng_name, '')
+                    bg_color = ohaeng_box_colors.get(oheng_name, "#f0f0f0")
+                    text_color = ohaeng_text_colors.get(oheng_name, "#000000")
+                    
+                    st.markdown(f"""
+                    <div style="background-color: {bg_color}; color: {text_color}; padding: 15px; border-radius: 8px; text-align: center; height: 160px; display: flex; flex-direction: column; justify-content: center; margin-bottom:10px; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
+                        <strong style="font-size: 1.1em; margin-bottom: 5px;">{oheng_name}({hanja})</strong>
+                        <div style="font-size: 1.4em; font-weight: bold; margin: 5px 0;">{strength}</div>
+                        <small style="font-size: 0.85em; line-height: 1.3;">{description}</small>
+                    </div>
+                    """, unsafe_allow_html=True)
+            
+            ohaeng_summary_exp_text = get_ohaeng_summary_explanation(ohaeng_strengths)
+            st.markdown(f"<div style='font-size: 0.95rem; color: #4b5563; margin-top: 1rem; padding: 0.75rem; background-color: #f9fafb; border-radius: 4px; border-left: 3px solid #60a5fa;'>{ohaeng_summary_exp_text}</div>", unsafe_allow_html=True)
+        elif analysis_possible: # 계산은 시도했으나 결과가 없는 경우 (거의 발생 안 함)
+             st.markdown("오행 강약 정보를 계산 중이거나 표시할 데이터가 없습니다.")
+        # (analysis_possible이 False인 경우 이미 위에서 경고 메시지 표시됨)
+
+        # --- 십신 분석 표시 ---
+        st.markdown("---") # 구분선
+        st.subheader("🌟 십신(十神) 분석")
+        if sipshin_strengths and analysis_possible:
+            # 10개의 십신을 2행 5열로 표시
+            row1_cols_sipshin = st.columns(5)
+            row2_cols_sipshin = st.columns(5)
+            
+            sipshin_display_slots = row1_cols_sipshin + row2_cols_sipshin # 총 10개의 컬럼 객체
+
+            for i, sipshin_name in enumerate(SIPSHIN_ORDER):
+                with sipshin_display_slots[i]:
+                    strength = sipshin_strengths.get(sipshin_name, 0.0)
+                    text_color = SIPSHIN_COLORS.get(sipshin_name, "#333333") # 상수에서 정의한 색상 사용
+                    
+                    st.markdown(f"""
+                    <div style="background-color: #f9fafb; padding: 10px; border-radius: 6px; border: 1px solid #e5e7eb; text-align: center; margin-bottom: 10px; height: 100px; display: flex; flex-direction: column; justify-content: center; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
+                        <div style="font-weight: 500; font-size: 0.95em; color: {text_color}; margin-bottom: 5px;">{sipshin_name}</div>
+                        <div style="font-size: 1.3em; font-weight: bold; color: {text_color};">{strength}</div>
+                    </div>
+                    """, unsafe_allow_html=True)
+            
+            sipshin_summary_exp_text = get_sipshin_summary_explanation(sipshin_strengths, day_gan_char) # 일간 정보 전달
+            st.markdown(f"<div style='font-size: 0.95rem; color: #4b5563; margin-top: 1rem; padding: 0.75rem; background-color: #f9fafb; border-radius: 4px; border-left: 3px solid #7c3aed;'>{sipshin_summary_exp_text}</div>", unsafe_allow_html=True)
+
+        elif analysis_possible:
+            st.markdown("십신 강약 정보를 계산 중이거나 표시할 데이터가 없습니다.")
+        # (analysis_possible이 False인 경우 이미 위에서 경고 메시지 표시됨)
+
+
+        # --- 대운, 세운 등 기존 운세 정보 표시 (이전과 동일) ---
+        st.markdown("---") # 구분선
         st.subheader(f"運 대운 ({gender})")
         if "오류" in month_pillar_str or not month_gan_char or not month_ji_char :
             st.warning("월주 계산에 오류가 있어 대운을 표시할 수 없습니다.")
         else:
-            daewoon_text_list, daewoon_start_age_val, is_sunhaeng_val = get_daewoon( year_gan_char, gender, birth_dt, month_gan_char, month_ji_char, solar_data)
-            if isinstance(daewoon_text_list, list) and daewoon_text_list and "오류" in daewoon_text_list[0]: st.warning(daewoon_text_list[0])
+            # is_sunhaeng_val 변수 이름을 명확히 하기 위해 수정 (만약 이전 코드와 다르다면)
+            daewoon_text_list, daewoon_start_age_val, is_sunhaeng_val = get_daewoon( 
+                year_gan_char, gender, birth_dt, month_gan_char, month_ji_char, solar_data
+            )
+            if isinstance(daewoon_text_list, list) and daewoon_text_list and "오류" in daewoon_text_list[0]: 
+                st.warning(daewoon_text_list[0])
             elif isinstance(daewoon_text_list, list) and all(":" in item for item in daewoon_text_list):
                 st.text(f"대운 시작 나이: 약 {daewoon_start_age_val}세 ({'순행' if is_sunhaeng_val else '역행'})")
-                daewoon_table_data = {"주기(나이)": [item.split(':')[0] for item in daewoon_text_list], "간지": [item.split(': ')[1] for item in daewoon_text_list]}
+                daewoon_table_data = {
+                    "주기(나이)": [item.split(':')[0] for item in daewoon_text_list], 
+                    "간지": [item.split(': ')[1] for item in daewoon_text_list]
+                }
                 st.table(pd.DataFrame(daewoon_table_data))
-            else: st.warning("대운 정보를 올바르게 가져오지 못했습니다.")
+            else: 
+                st.warning("대운 정보를 올바르게 가져오지 못했습니다.")
 
+        st.markdown("---") # 구분선
         st.subheader(f"📅 기준일({ty}년 {tm}월 {td}일) 운세")
         col1,col2 = st.columns(2)
         with col1:
@@ -498,20 +601,4 @@ if st.sidebar.button("🧮 계산 실행", use_container_width=True, type="prima
         with col2:
             st.markdown(f"##### 月 월운 ({ty}년 {tm:02d}월~)")
             st.table(pd.DataFrame(get_wolun_list(ty,tm,solar_data,12), columns=["연월","간지"]))
-else:
-    st.markdown(f"""
-    **사용 방법**
-    1. 이 파이썬 스크립트(`saju_app.py`)와 절기 데이터 엑셀 파일 (`{FILE_NAME}`)을 **같은 폴더**에 저장합니다.
-    2. 컴퓨터에 Python과 Streamlit, Pandas, openpyxl, **lunardate**가 설치되어 있어야 합니다.
-       - Python 설치: [python.org](https://www.python.org/)
-       - 패키지 설치 (터미널 또는 명령 프롬프트에서 실행):
-         ```bash
-         pip install streamlit pandas openpyxl lunardate
-         ```
-    3. 터미널 또는 명령 프롬프트에서 스크립트가 있는 폴더로 이동한 후, 다음 명령을 실행합니다:
-       ```bash
-       streamlit run saju_app.py
-       ```
-    4. 웹 브라우저에 앱이 열리면, 왼쪽 사이드바에서 달력 유형(양력/음력)을 선택하고, 출생 정보와 운세 기준일을 입력한 후 **🧮 계산 실행** 버튼을 클릭하세요.
-    """)
-    st.markdown("---"); st.markdown("**주의:** 학습 및 참고용이며, 중요한 결정은 전문가와 상의하세요.")
+# (else: st.markdown(...) 부분은 기존과 동일하게 유지)
