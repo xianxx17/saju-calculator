@@ -1340,7 +1340,7 @@ if st.sidebar.button("🧮 계산 실행", use_container_width=True, type="prima
                 ohaeng_strengths, orient='index', columns=['세력']
             ).reindex(OHENG_ORDER)
 
-            st.bar_chart(ohaeng_df_for_chart, height=300) # height는 조절 가능
+            st.bar_chart(ohaeng_df_for_chart, height=300, use_container_width=True) # height는 조절 가능
 
             # 오행별 기본 설명 (차트 아래 또는 옆에 둘 수 있음)
             # 현재는 차트 아래에 요약 설명만 두겠습니다.
@@ -1365,7 +1365,7 @@ if st.sidebar.button("🧮 계산 실행", use_container_width=True, type="prima
                 sipshin_strengths, orient='index', columns=['세력']
             ).reindex(SIPSHIN_ORDER)
 
-            st.bar_chart(sipshin_df_for_chart, height=400) # 십신은 10개이므로 높이 조절
+            st.bar_chart(sipshin_df_for_chart, height=400, use_container_width=True) # 십신은 10개이므로 높이 조절
 
             sipshin_summary_exp_text = get_sipshin_summary_explanation(sipshin_strengths, day_gan_char)
             st.markdown(f"<div style='font-size: 0.95rem; color: #4b5563; margin-top: 1rem; padding: 0.75rem; background-color: #f9fafb; border-radius: 4px; border-left: 3px solid #7c3aed;'>{sipshin_summary_exp_text}</div>", unsafe_allow_html=True)
