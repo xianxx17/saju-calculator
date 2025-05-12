@@ -757,6 +757,70 @@ if st.sidebar.button("🧮 계산 실행", use_container_width=True, type="prima
             st.markdown("십신 강약 정보를 계산 중이거나 표시할 데이터가 없습니다.")
         # (analysis_possible이 False인 경우 이미 위에서 경고 메시지 표시됨)
 
+# (saju_app.py 파일의 if st.sidebar.button(...) 블록 내부,
+#  기존 십신 분석 표시 부분 다음에 이어서 추가)
+
+        # ... (이전 십신 분석 요약 설명 st.markdown(...) 다음 줄부터)
+
+        # --- 신강/신약 및 격국 분석 ---
+        st.markdown("---") # 구분선
+        st.subheader("💪 일간 강약 및 격국(格局) 분석")
+
+        shinkang_status_result = "분석 정보 없음"
+        shinkang_explanation_html = ""
+        gekuk_name_result = "분석 정보 없음"
+        gekuk_explanation_html = ""
+
+        # 오행/십신 분석이 가능했고, 결과가 있을 때만 신강/신약 및 격국 분석 시도
+        if analysis_possible and ohaeng_strengths and sipshin_strengths:
+            try:
+                shinkang_status_result = determine_shinkang_shinyak(sipshin_strengths)
+                shinkang_explanation_html = get_shinkang_explanation(shinkang_status_result)
+            except Exception as e:
+                st.warning(f"신강/신약 분석 중 오류 발생: {e}")
+                shinkang_status_result = "분석 오류"
+            
+            try:
+                # 격국 판단에는 일간, 월간, 월지, 그리고 십신 강약 정보가 필요합니다.
+                gekuk_name_result = determine_gekuk(
+                    day_gan_char,       # 일간
+                    month_gan_char,     # 월간
+                    month_ji_char,      # 월지 (한글)
+                    sipshin_strengths   # 십신 강약 딕셔너리
+                )
+                gekuk_explanation_html = get_gekuk_explanation(gekuk_name_result)
+            except Exception as e:
+                st.warning(f"격국 분석 중 오류 발생: {e}")
+                gekuk_name_result = "분석 오류"
+        elif not analysis_possible:
+            # 이미 이전에 "사주 기둥 중 일부가 정확히 계산되지 않아..." 경고가 표시되었을 것임
+            pass # 추가 메시지 없이 넘어감
+        else: # analysis_possible은 True이나 ohaeng/sipshin 결과가 없는 경우
+            st.info("오행 및 십신 정보가 부족하여 신강/신약 및 격국 분석을 수행할 수 없습니다.")
+
+
+        col_shinkang, col_gekuk = st.columns(2) # 두 개의 컬럼으로 나눔
+
+        with col_shinkang:
+            # HTML/Markdown을 사용하여 카드 스타일 적용
+            st.markdown(f"""
+            <div style="background-color: #f9fafb; border: 1px solid #e5e7eb; border-radius: 0.5rem; padding: 1.25rem; height: 100%; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
+                <h4 style="font-size: 1.05em; font-weight: 600; color: #1f2937; margin-bottom: 0.6rem; border-bottom: 1px solid #e5e7eb; padding-bottom: 0.4rem;">일간 강약 (신강/신약)</h4>
+                <p style="font-size: 1.2em; font-weight: bold; color: #2563eb; margin-bottom: 0.75rem;">{shinkang_status_result}</p>
+                <p style="font-size: 0.9em; color: #4b5563; line-height: 1.6;">{shinkang_explanation_html}</p>
+            </div>
+            """, unsafe_allow_html=True)
+
+        with col_gekuk:
+            st.markdown(f"""
+            <div style="background-color: #f9fafb; border: 1px solid #e5e7eb; border-radius: 0.5rem; padding: 1.25rem; height: 100%; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
+                <h4 style="font-size: 1.05em; font-weight: 600; color: #1f2937; margin-bottom: 0.6rem; border-bottom: 1px solid #e5e7eb; padding-bottom: 0.4rem;">격국(格局) 분석</h4>
+                <p style="font-size: 1.2em; font-weight: bold; color: #059669; margin-bottom: 0.75rem;">{gekuk_name_result}</p>
+                <p style="font-size: 0.9em; color: #4b5563; line-height: 1.6;">{gekuk_explanation_html}</p>
+            </div>
+            """, unsafe_allow_html=True)
+        
+        # ... (이어서 기존의 대운, 세운 등 운세 정보 표시 부분) ...        
 
         # --- 대운, 세운 등 기존 운세 정보 표시 (이전과 동일) ---
         st.markdown("---") # 구분선
