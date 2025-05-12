@@ -1386,7 +1386,45 @@ if st.sidebar.button("🧮 계산 실행", use_container_width=True, type="prima
 
         # ... (이어서 기존의 대운, 세운 등 운세 정보 표시 부분 st.markdown("---") st.subheader(f"運 대운 ({gender})") ...)
         
+# (saju_app.py 파일의 if st.sidebar.button(...) 블록 내부,
+#  기존 합충형해파 분석 표시 부분 다음에 이어서 추가)
 
+        # ... (이전 합충형해파 분석 st.markdown(...) 코드 다음 줄부터)
+
+        # --- 주요 신살(神煞) 분석 ---
+        st.markdown("---") # 구분선
+        st.subheader("🔮 주요 신살(神煞) 분석")
+
+        # saju_8char_for_analysis 딕셔너리가 이미 상단에서 정의 및 사용 가능해야 합니다.
+        
+        if analysis_possible and 'day_gan_char' in locals() and day_gan_char: # 주요 변수가 있는지 한번 더 확인
+            try:
+                found_shinsals_list = analyze_shinsal(saju_8char_for_analysis)
+                
+                if found_shinsals_list:
+                    st.markdown("##### 발견된 주요 신살:")
+                    # 각 항목을 리스트로 표시 (HTML 예제 shinsal-item 스타일 참고)
+                    items_html = "".join([f"<li style='background-color: #eef2ff; color: #312e81; padding: 0.4rem 0.75rem; border-radius: 0.25rem; margin-bottom: 0.3rem; font-size: 0.9rem; line-height: 1.5;'>{item}</li>" for item in found_shinsals_list])
+                    st.markdown(f"<ul style='list-style: none; padding-left: 0; margin-bottom: 0.5rem;'>{items_html}</ul>", unsafe_allow_html=True)
+                    
+                    # 전체 요약 설명
+                    shinsal_explanation_html = get_shinsal_detail_explanation(found_shinsals_list)
+                    st.markdown(f"<div style='font-size: 0.95rem; color: #4b5563; margin-top: 1rem; padding: 0.75rem; background-color: #f9fafb; border-radius: 4px; border-left: 3px solid #8b5cf6;'>{shinsal_explanation_html}</div>", unsafe_allow_html=True)
+                
+                else:
+                    st.markdown("<p style='font-size:0.95rem; color:#4b5563;'>특별히 나타나는 주요 신살이 없습니다.</p>", unsafe_allow_html=True)
+
+            except Exception as e:
+                st.warning(f"신살 분석 중 오류 발생: {e}")
+                st.markdown("<p style='font-size:0.95rem; color:#b91c1c;'>신살 분석 중 오류가 발생하여 결과를 표시할 수 없습니다.</p>", unsafe_allow_html=True)
+        
+        elif not analysis_possible:
+            # 이미 상단에서 "사주 기둥 중 일부가 정확히 계산되지 않아..." 경고가 표시되었을 것입니다.
+            pass 
+        else: 
+            st.info("사주 정보가 부족하여 신살 분석을 수행할 수 없습니다.")
+
+        # ... (이어서 기존의 대운, 세운 등 운세 정보 표시 부분 st.markdown("---") st.subheader(f"運 대운 ({gender})") ...)
         # --- 대운, 세운 등 기존 운세 정보 표시 (이전과 동일) ---
         st.markdown("---") # 구분선
         st.subheader(f"運 대운 ({gender})")
