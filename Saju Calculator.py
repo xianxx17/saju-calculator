@@ -529,6 +529,285 @@ def get_hap_chung_detail_explanation(found_interactions_dict):
     return "<ul style='list-style-type: disc; margin-left: 20px; padding-left: 0;'>" + "".join(explanation_parts) + "</ul>"
 
 # ... (기존의 다른 함수들 determine_shinkang_shinyak, determine_gekuk 등은 이 위 또는 아래에 위치) ...
+# (saju_app.py 파일에 추가될 내용)
+
+# ... (기존 get_hap_chung_detail_explanation 함수 등 다음 줄에)
+
+# ───────────────────────────────
+# 주요 신살(神煞) 분석용 상수 및 함수 정의
+# (사용자님이 제공해주신 HTML/JS 예제 코드의 규칙들을 기반으로 작성되었습니다)
+# ───────────────────────────────
+
+# 천을귀인 (일간 기준, 해당 지지가 사주 내에 있는지 확인)
+CHEONEULGWIIN_MAP = {
+    "갑": ["축", "미"], "을": ["자", "신"], "병": ["해", "유"], "정": ["해", "유"],
+    "무": ["축", "미"], "기": ["자", "신"], "경": ["축", "미", "인", "오"], # JS 예제는 경: 축미인오, 신: 인오
+    "신": ["인", "오"], "임": ["사", "묘"], "계": ["사", "묘"]
+}
+
+# 문창귀인 (일간 기준, 해당 지지가 사주 내에 있는지 확인)
+MUNCHANGGWIIN_MAP = {
+    "갑": "사", "을": "오", "병": "신", "정": "유", "무": "신",
+    "기": "유", "경": "해", "신": "자", "임": "인", "계": "묘"
+}
+
+# 도화살 (년지 또는 일지 기준 - 삼합 왕지의 다음 글자, 즉 목욕지)
+# 기준 지지(삼합의 생지) -> 도화 지지(삼합의 왕지) - JS맵은 왕지를 가리킴. 도화는 목욕지.
+# 예: 해묘미(목국) -> 목욕지 '자'. 인오술(화국) -> 목욕지 '묘'.
+# JS 예제: {"해":"자", "묘":"자", "미":"자", "인":"묘", "오":"묘", "술":"묘", ... }
+# 이 맵은 (삼합의 첫글자 또는 중간글자 또는 끝글자) -> 도화살 지지(목욕지)
+DOHWASAL_MAP = {
+    # 해묘미 -> 자
+    "해": "자", "묘": "자", "미": "자",
+    # 인오술 -> 묘
+    "인": "묘", "오": "묘", "술": "묘",
+    # 사유축 -> 오
+    "사": "오", "유": "오", "축": "오",
+    # 신자진 -> 유
+    "신": "유", "자": "유", "진": "유"
+}
+
+# 역마살 (년지 또는 일지 기준 - 삼합 생지를 충(沖)하는 지지)
+YEONGMASAL_MAP = {
+    # 해묘미(목국) -> 목의 생지 해와 충하는 사
+    "해": "사", "묘": "사", "미": "사",
+    # 인오술(화국) -> 화의 생지 인과 충하는 신
+    "인": "신", "오": "신", "술": "신",
+    # 사유축(금국) -> 금의 생지 사와 충하는 해
+    "사": "해", "유": "해", "축": "해",
+    # 신자진(수국) -> 수의 생지 신과 충하는 인
+    "신": "인", "자": "인", "진": "인"
+}
+
+# 화개살 (년지 또는 일지 기준 - 삼합의 묘지)
+HWAGAESAL_MAP = {
+    # 해묘미 -> 미
+    "해": "미", "묘": "미", "미": "미",
+    # 인오술 -> 술
+    "인": "술", "오": "술", "술": "술",
+    # 사유축 -> 축
+    "사": "축", "유": "축", "축": "축",
+    # 신자진 -> 진
+    "신": "진", "자": "진", "진": "진"
+}
+
+# 양인살 (일간 기준, YANGIN_JI_MAP 재활용 가능 - 격국에서 이미 정의됨)
+# YANGIN_JI_MAP = {"갑": "묘", "병": "오", "무": "오", "경": "유", "임": "자"}
+
+# 괴강살 (일주가 해당 간지 조합일 때)
+GOEGANGSAL_ILJU_LIST = ["경진", "경술", "임진", "임술", "무진", "무술"] # 갑진, 갑술도 포함하는 경우도 있음, JS예제는 6개.
+
+# 백호대살 (각 기둥의 간지가 해당 조합일 때)
+BAEKHODAESAL_GANJI_LIST = ["갑진", "을미", "병술", "정축", "무진", "임술", "계축"]
+
+# 귀문관살 (지지 쌍이 사주 내에 있을 때) - 정렬된 쌍으로 정의
+GWIMUNGWANSAL_PAIRS = [
+    tuple(sorted(("자", "유"))), tuple(sorted(("축", "오"))), tuple(sorted(("인", "미"))),
+    tuple(sorted(("묘", "신"))), tuple(sorted(("진", "해"))), tuple(sorted(("사", "술")))
+]
+
+# 공망 (일주 기준)
+# (일간 인덱스 - 일지 인덱스) % 12 결과에 따른 공망 지지 쌍
+# GAN, JI 리스트는 이미 상단에 정의되어 있음
+GONGMANG_MAP_BY_DIFF = {
+    # 일간-일지 인덱스 차 (mod 12) : [공망지지1, 공망지지2]
+    # 예: 갑자일주 -> 갑(0)-자(0)=0 -> 술,해 공망
+    0: ["술", "해"], 10: ["신", "유"], 8: ["오", "미"],
+    6: ["진", "사"], 4: ["인", "묘"], 2: ["자", "축"]
+    # JS에서는 (일간idx - 일지idx) % 12 값 사용.
+    # 갑자(0,0) -> 0. 을축(1,1) -> 0. 병인(2,2) -> 0.
+    # 즉, 같은 순번의 간지가 만나면 0. (갑0-자0=0, 을1-축1=0)
+    # 갑술(0,10) -> (0-10)%12 = -10%12 = 2.
+    # 계해(9,11) -> (9-11)%12 = -2%12 = 10.
+}
+# PILLAR_NAMES_KOR (전체 기둥 이름) - 신살 결과 표시시 사용
+PILLAR_NAMES_KOR = ["년주", "월주", "일주", "시주"]
+
+
+def analyze_shinsal(saju_8char_details):
+    """
+    사주팔자를 기반으로 주요 신살을 분석합니다.
+    saju_8char_details: {"year_gan":yg, "year_ji":yj, ..., "day_gan":dg, ...}
+    반환: ["신살 결과 문자열 리스트"]
+    """
+    ilgan_char = saju_8char_details["day_gan"]
+    all_gans = [saju_8char_details["year_gan"], saju_8char_details["month_gan"], saju_8char_details["day_gan"], saju_8char_details["time_gan"]]
+    all_jis = [saju_8char_details["year_ji"], saju_8char_details["month_ji"], saju_8char_details["day_ji"], saju_8char_details["time_ji"]]
+    
+    # 사주 각 기둥의 간지 문자열 생성
+    pillar_ganjis_str = [
+        saju_8char_details["year_gan"] + saju_8char_details["year_ji"],
+        saju_8char_details["month_gan"] + saju_8char_details["month_ji"],
+        saju_8char_details["day_gan"] + saju_8char_details["day_ji"],
+        saju_8char_details["time_gan"] + saju_8char_details["time_ji"]
+    ]
+    ilju_ganji_str = pillar_ganjis_str[2] # 일주 간지
+
+    found_shinsals_set = set() # 중복 방지를 위해 set 사용
+
+    # 1. 천을귀인
+    if ilgan_char in CHEONEULGWIIN_MAP:
+        for ji_idx, ji_char in enumerate(all_jis):
+            if ji_char in CHEONEULGWIIN_MAP[ilgan_char]:
+                found_shinsals_set.add(f"천을귀인: 일간({ilgan_char}) 기준 {PILLAR_NAMES_KOR_SHORT[ji_idx]}지({ji_char})")
+
+    # 2. 문창귀인
+    if ilgan_char in MUNCHANGGWIIN_MAP:
+        for ji_idx, ji_char in enumerate(all_jis):
+            if ji_char == MUNCHANGGWIIN_MAP[ilgan_char]:
+                found_shinsals_set.add(f"문창귀인: 일간({ilgan_char}) 기준 {PILLAR_NAMES_KOR_SHORT[ji_idx]}지({ji_char})")
+    
+    # 3. 도화살 (년지 또는 일지 기준)
+    yeonji_char = saju_8char_details["year_ji"]
+    ilji_char = saju_8char_details["day_ji"]
+    dohwa_for_yeonji = DOHWASAL_MAP.get(yeonji_char)
+    dohwa_for_ilji = DOHWASAL_MAP.get(ilji_char)
+    for ji_idx, ji_char in enumerate(all_jis):
+        if dohwa_for_yeonji and ji_char == dohwa_for_yeonji:
+            found_shinsals_set.add(f"도화살: 연지({yeonji_char}) 기준 {PILLAR_NAMES_KOR_SHORT[ji_idx]}지({ji_char})")
+        if dohwa_for_ilji and ji_char == dohwa_for_ilji and dohwa_for_ilji != dohwa_for_yeonji : # 연지 기준으로 이미 추가된 경우 중복 방지 (일지와 연지가 같을 때)
+            found_shinsals_set.add(f"도화살: 일지({ilji_char}) 기준 {PILLAR_NAMES_KOR_SHORT[ji_idx]}지({ji_char})")
+
+    # 4. 역마살 (년지 또는 일지 기준)
+    yeokma_for_yeonji = YEONGMASAL_MAP.get(yeonji_char)
+    yeokma_for_ilji = YEONGMASAL_MAP.get(ilji_char)
+    for ji_idx, ji_char in enumerate(all_jis):
+        if yeokma_for_yeonji and ji_char == yeokma_for_yeonji:
+            found_shinsals_set.add(f"역마살: 연지({yeonji_char}) 기준 {PILLAR_NAMES_KOR_SHORT[ji_idx]}지({ji_char})")
+        if yeokma_for_ilji and ji_char == yeokma_for_ilji and yeokma_for_ilji != yeokma_for_yeonji:
+            found_shinsals_set.add(f"역마살: 일지({ilji_char}) 기준 {PILLAR_NAMES_KOR_SHORT[ji_idx]}지({ji_char})")
+            
+    # 5. 화개살 (년지 또는 일지 기준)
+    hwagae_for_yeonji = HWAGAESAL_MAP.get(yeonji_char)
+    hwagae_for_ilji = HWAGAESAL_MAP.get(ilji_char)
+    for ji_idx, ji_char in enumerate(all_jis):
+        if hwagae_for_yeonji and ji_char == hwagae_for_yeonji:
+            found_shinsals_set.add(f"화개살: 연지({yeonji_char}) 기준 {PILLAR_NAMES_KOR_SHORT[ji_idx]}지({ji_char})")
+        if hwagae_for_ilji and ji_char == hwagae_for_ilji and hwagae_for_ilji != hwagae_for_yeonji:
+            found_shinsals_set.add(f"화개살: 일지({ilji_char}) 기준 {PILLAR_NAMES_KOR_SHORT[ji_idx]}지({ji_char})")
+
+    # 6. 양인살 (일간 기준, YANGIN_JI_MAP은 격국 분석에서 이미 정의됨)
+    if ilgan_char in YANGIN_JI_MAP: # YANGIN_JI_MAP이 정의되어 있어야 함
+        for ji_idx, ji_char in enumerate(all_jis):
+            if ji_char == YANGIN_JI_MAP[ilgan_char]:
+                found_shinsals_set.add(f"양인살: 일간({ilgan_char}) 기준 {PILLAR_NAMES_KOR_SHORT[ji_idx]}지({ji_char})")
+    
+    # 7. 괴강살 (일주가 해당 간지일 때)
+    if ilju_ganji_str in GOEGANGSAL_ILJU_LIST:
+        found_shinsals_set.add(f"괴강살: 일주({ilju_ganji_str})")
+        
+    # 8. 백호대살 (각 기둥의 간지가 해당될 때)
+    for pillar_idx, current_pillar_ganji_str in enumerate(pillar_ganjis_str):
+        if current_pillar_ganji_str in BAEKHODAESAL_GANJI_LIST:
+            found_shinsals_set.add(f"백호대살: {PILLAR_NAMES_KOR[pillar_idx]}({current_pillar_ganji_str})")
+            
+    # 9. 귀문관살 (지지 쌍이 사주 내에 있을 때)
+    for (i_idx, i_ji), (j_idx, j_ji) in itertools.combinations(list(enumerate(all_jis)), 2):
+        pair_sorted = tuple(sorted((i_ji, j_ji)))
+        if pair_sorted in GWIMUNGWANSAL_PAIRS:
+            found_shinsals_set.add(f"귀문관살: {PILLAR_NAMES_KOR_SHORT[i_idx]}지({i_ji}) + {PILLAR_NAMES_KOR_SHORT[j_idx]}지({j_ji})")
+
+    # 10. 공망 (일주 기준)
+    try:
+        ilgan_idx = GAN.index(ilgan_char)
+        ilji_idx = JI.index(ilji_char) # JI는 한글 지지 리스트 ["자", "축", ...]
+        
+        # 일주 순번 (0~59, 갑자=0): (일간idx - 일지idx + 12) % 12 -> 이 값은 순중(旬中)을 찾기 위함.
+        # 갑자일주(0,0) -> (0-0)%12 = 0 (갑자순)
+        # 계해일주(9,11) -> (9-11)%12 = -2%12 = 10 (갑인순)
+        # JS 예제: mod(GAN.indexOf(ilgan) - JI_H.indexOf(ilji), 12);
+        # 이 diff는 10개의 천간과 12개의 지지가 순환할 때, 60갑자 중 현재 일주가 몇 번째 '순(旬)'에 속하는지를 나타내는 지표 중 하나.
+        # 갑자순(0)은 술해가 공망, 갑술순(2)은 신유가 공망... 순서대로 2칸씩 밀림.
+        # (일간 idx - 일지 idx + 120) % 12 로 음수 방지. (120은 12의 배수)
+        # JS: (일간idx - 일지idx) 로 나온 diff값으로 GONGMANG_MAP_BY_DIFF에서 찾음.
+        # diff 값의 범위는 -11 ~ 11. mod 12하면 0 ~ 11.
+        # (0-0)%12 = 0
+        # (0-1)%12 = 11 (갑자일주면 자가 일지, 갑축일주는 없음. 갑인, 갑묘, 갑진... / 일주가 갑축은 없으므로 (0-1)은 발생 안함)
+        # 일주 갑자(0,0) -> diff = 0
+        # 일주 을축(1,1) -> diff = 0
+        # ...
+        # 일주 계유(9,9) -> diff = 0 (갑자순) -> 술해 공망
+        # 일주 갑술(0,10) -> diff = (0-10)%12 = -10%12 = 2 (갑술순) -> 신유 공망 (JS맵: 10: 신유, 0: 술해. JS diff는 갑자순일때 0, 갑술순일때 10, 갑신순일때 8...)
+        # JS의 diff 계산법: (일간idx - 일지idx) % 12. (갑자:0, 갑술: -10%12=2, 갑신:-8%12=4, 갑오:-6%12=6, 갑진:-4%12=8, 갑인:-2%12=10)
+        # 갑자(0,0) -> 0. GONGMANG_MAP_BY_DIFF[0] = ["술","해"] -> 맞음
+        # 갑술(0,10) -> (0-10)%12 = 2. GONGMANG_MAP_BY_DIFF[2] = ["자","축"] -> JS맵은 10: 신유.
+        # JS의 GONGMANG_MAP_BY_DIFF = { 0: ["술","해"], 10: ["신","유"], 8: ["오","미"], 6: ["진","사"], 4: ["인","묘"], 2: ["자","축"] };
+        # 이 맵의 키는 (일간idx - 일지idx + 12) % 12 값으로 보임.
+        
+        gongmang_key_diff = (ilgan_idx - ilji_idx + 12) % 12 # 0 ~ 11 사이의 값
+        # JS 예제와 Python의 % 연산 음수처리 방식 차이 때문에 JS맵 키 직접 사용 어려움.
+        # 공망 찾는 표준 방법: 일주 순번(0~59) 찾고, 해당 순(旬)의 공망 찾기.
+        # 일주 순번 = (일간idx * 6 + 일지idx - 일간idx + 60) % 60 (다른 방법도 많음)
+        # 여기서는 JS 예제의 GONGMANG_MAP_BY_DIFF 키를 Python의 diff 계산 결과에 맞게 조정해야 함.
+        # (일간idx - 일지idx + 12) % 12 -> 0:갑자순, 2:갑술순, 4:갑신순, 6:갑오순, 8:갑진순, 10:갑인순
+        # JS 예제 map key : 갑자순(0), 갑인순(10), 갑진순(8), 갑오순(6), 갑신순(4), 갑술순(2)
+
+        # JS의 GONGMANG_MAP_BY_DIFF 키는 JS방식의 diff % 12 결과임
+        # (일간idx - 일지idx) 를 Python에서 % 12 하면 결과가 다를 수 있으므로,
+        # 일주 60갑자 번호를 찾고, 그 번호가 속한 순(旬)의 공망을 찾는 것이 더 표준적.
+        # 갑자(0) ~ 계유(9) -> 술해 공망
+        # 갑술(10) ~ 계미(19) -> 신유 공망
+        # 갑신(20) ~ 계사(29) -> 오미 공망
+        # ...
+        # 일주 60갑자 인덱스 계산
+        ilju_gapja_idx = -1
+        for i in range(60):
+            if GAN[i % 10] == ilgan_char and JI[i % 12] == ilji_char:
+                ilju_gapja_idx = i
+                break
+        
+        if ilju_gapja_idx != -1:
+            gongmang_jis = JI[ (ilju_gapja_idx + 10) % 12 ], JI[ (ilju_gapja_idx + 11) % 12 ]
+            found_shinsals_set.add(f"공망(空亡): 일주({ilju_ganji_str}) 기준 {gongmang_jis[0]}, {gongmang_jis[1]} 공망")
+            
+            found_in_pillars = []
+            for ji_idx, ji_char_in_saju in enumerate(all_jis):
+                if ji_char_in_saju in gongmang_jis:
+                    found_in_pillars.append(f"{PILLAR_NAMES_KOR[ji_idx]}의 {ji_char_in_saju}")
+            if found_in_pillars:
+                found_shinsals_set.add(f"  └ ({', '.join(found_in_pillars)})가 공망에 해당합니다.")
+
+    except IndexError: # GAN.index 또는 JI.index 실패 시 (거의 발생 안 함)
+        pass # 공망 계산 실패
+        
+    return sorted(list(found_shinsals_set))
+
+
+def get_shinsal_detail_explanation(found_shinsals_list):
+    """발견된 신살 종류에 따라 간단한 설명을 반환합니다."""
+    if not found_shinsals_list:
+        return "<p>특별히 나타나는 주요 신살이 없습니다.</p>"
+
+    explanation_parts = []
+    # HTML 예제의 설명을 기반으로 각 신살 타입에 대한 설명 추가
+    # 설명은 키워드 기반으로 찾아서 추가 (중복 방지)
+    main_shinsal_explanations = {
+        "천을귀인": "어려울 때 귀인의 도움을 받거나 위기를 넘기는 행운이 따르는 길성 중의 길성입니다.",
+        "문창귀인": "학문, 지혜, 총명함을 나타내며 글재주나 시험운 등에 긍정적인 영향을 줄 수 있습니다.",
+        "도화살": "매력, 인기, 예술적 감각을 의미하며, 이성에게 인기가 많을 수 있으나 때로는 구설을 조심해야 합니다.",
+        "역마살": "활동성, 이동, 변화, 여행, 해외와의 인연 등을 나타냅니다. 한 곳에 정착하기보다 변화를 추구하는 성향일 수 있습니다.",
+        "화개살": "예술, 종교, 학문, 철학 등 정신세계와 관련된 분야에 재능이나 인연이 깊을 수 있습니다. 때로 고독감을 느끼기도 합니다.",
+        "양인살": "강한 에너지, 카리스마, 독립심, 경쟁심을 나타냅니다. 순탄할 때는 큰 성취를 이루지만, 운이 나쁠 때는 과격함이나 사건사고를 조심해야 합니다.",
+        "괴강살": "매우 강한 기운과 리더십, 총명함을 나타냅니다. 극단적인 성향이나 고집을 주의해야 하며, 큰 인물이 될 가능성도 있습니다.",
+        "백호대살": "강한 기운으로 인해 급작스러운 사건, 사고, 질병 등을 경험할 수 있음을 암시하므로 평소 건강과 안전에 유의하는 것이 좋습니다.",
+        "귀문관살": "예민함, 직관력, 영감, 독특한 정신세계를 나타냅니다. 때로는 신경과민, 변덕, 집착 등으로 나타날 수 있어 마음의 안정이 중요합니다.",
+        "공망": "해당 글자의 영향력이 약화되거나 공허함을 의미합니다. 정신적인 활동, 종교, 철학 등에 관심을 두거나, 예상 밖의 결과나 변화를 경험할 수 있습니다."
+    }
+    
+    added_explanations_keys = set() # 이미 추가된 설명인지 확인
+
+    for shinsal_item_str in found_shinsals_list:
+        for shinsal_key, desc in main_shinsal_explanations.items():
+            if shinsal_key in shinsal_item_str and shinsal_key not in added_explanations_keys:
+                explanation_parts.append(f"<li><strong>{shinsal_key}:</strong> {desc}</li>")
+                added_explanations_keys.add(shinsal_key)
+    
+    if not explanation_parts:
+        return "<p>발견된 신살에 대한 구체적인 설명을 준비 중입니다.</p>"
+        
+    return "<ul style='list-style-type: disc; margin-left: 20px; padding-left: 0;'>" + "".join(explanation_parts) + "</ul>"
+
+# ... (기존의 다른 함수들 determine_shinkang_shinyak, get_hap_chung_detail_explanation 등은 이 위 또는 아래에 위치) ...
 # ───────────────────────────────
 # 오행 및 십신 세력 계산 함수
 # ───────────────────────────────
