@@ -37,6 +37,199 @@ TIME_BRANCH_MAP = [
 ]
 
 # ───────────────────────────────
+# 추가 상수 정의 (오행, 지장간, 십신 등)
+# (사용자님이 제공해주신 HTML/JS 예제 코드의 상수들을 기반으로 작성되었습니다)
+# ───────────────────────────────
+
+GAN_TO_OHENG = {
+    "갑": "목", "을": "목", "병": "화", "정": "화", "무": "토",
+    "기": "토", "경": "금", "신": "금", "임": "수", "계": "수"
+}
+
+# 지지별 지장간 및 비율 (사용자 HTML 예제의 ZW 상수 기반)
+# 참고: 이 비율들의 합이 항상 정확히 1.0이 되지는 않을 수 있으며,
+#       이는 원본 JS 코드의 로직을 따른 것입니다.
+#       더 일반적인 명리 이론의 지장간 비율(예: 여기/중기/정기 배분 일수 기반)과 다를 수 있습니다.
+JIJI_JANGGAN = {
+    "자": {"계": 1.0},
+    "축": {"기": 0.5, "계": 0.3, "신": 0.2},
+    "인": {"갑": 0.5, "병": 0.3, "무": 0.2},
+    "묘": {"을": 1.0},
+    "진": {"무": 0.5, "을": 0.3, "계": 0.2},
+    "사": {"병": 0.5, "무": 0.3, "경": 0.2},
+    "오": {"정": 0.7, "기": 0.3},
+    "미": {"기": 0.5, "정": 0.3, "을": 0.2},
+    "신": {"경": 0.5, "임": 0.3, "무": 0.2},
+    "유": {"신": 1.0},
+    "술": {"무": 0.5, "신": 0.3, "정": 0.2},
+    "해": {"임": 0.7, "갑": 0.3}
+}
+
+# 각 위치별 가중치 (사용자 HTML 예제의 PW 상수 기반)
+POSITIONAL_WEIGHTS = {
+    "연간": 0.7, "연지": 0.9, "월간": 0.9, "월지": 2.1,
+    "일간": 0.5, "일지": 1.9, "시간": 0.8, "시지": 1.0
+}
+# 계산 시 사용할 위치 키 목록 (순서대로: 년간, 연지, 월간, 월지, 일간, 일지, 시간, 시지)
+POSITION_KEYS_ORDERED = ["연간", "연지", "월간", "월지", "일간", "일지", "시간", "시지"]
+
+
+# 십신 관계표 (일간 기준) (사용자 HTML 예제의 S 상수 기반)
+SIPSHIN_MAP = {
+    "갑": {"갑": "비견", "을": "겁재", "병": "식신", "정": "상관", "무": "편재", "기": "정재", "경": "편관", "신": "정관", "임": "편인", "계": "정인"},
+    "을": {"갑": "겁재", "을": "비견", "병": "상관", "정": "식신", "무": "정재", "기": "편재", "경": "정관", "신": "편관", "임": "정인", "계": "편인"},
+    "병": {"갑": "편인", "을": "정인", "병": "비견", "정": "겁재", "무": "식신", "기": "상관", "경": "편재", "신": "정재", "임": "편관", "계": "정관"},
+    "정": {"갑": "정인", "을": "편인", "병": "겁재", "정": "비견", "무": "상관", "기": "식신", "경": "정재", "신": "편재", "임": "정관", "계": "편관"},
+    "무": {"갑": "편관", "을": "정관", "병": "편인", "정": "정인", "무": "비견", "기": "겁재", "경": "식신", "신": "상관", "임": "편재", "계": "정재"},
+    "기": {"갑": "정관", "을": "편관", "병": "정인", "정": "편인", "무": "겁재", "기": "비견", "경": "상관", "신": "식신", "임": "정재", "계": "편재"},
+    "경": {"갑": "편재", "을": "정재", "병": "편관", "정": "정관", "무": "편인", "기": "정인", "경": "비견", "신": "겁재", "임": "식신", "계": "상관"},
+    "신": {"갑": "정재", "을": "편재", "병": "정관", "정": "편관", "무": "정인", "기": "편인", "경": "겁재", "신": "비견", "임": "상관", "계": "식신"},
+    "임": {"갑": "식신", "을": "상관", "병": "편재", "정": "정재", "무": "편관", "기": "정관", "경": "편인", "신": "정인", "임": "비견", "계": "겁재"},
+    "계": {"갑": "상관", "을": "식신", "병": "정재", "정": "편재", "무": "정관", "기": "편관", "경": "정인", "신": "편인", "임": "겁재", "계": "비견"}
+}
+
+OHENG_ORDER = ["목", "화", "토", "금", "수"]
+SIPSHIN_ORDER = ["비견", "겁재", "식신", "상관", "편재", "정재", "편관", "정관", "편인", "정인"]
+
+# 오행 기본 설명 (HTML 예제 참고)
+OHAENG_DESCRIPTIONS = {
+    "목": "성장, 시작, 인자함", "화": "열정, 표현, 예의", "토": "안정, 중재, 신용",
+    "금": "결실, 의리, 결단", "수": "지혜, 유연, 저장"
+}
+# 십신별 색상 (HTML 예제 참고) - CSS 클래스 대신 직접 색상 코드 사용 가능
+SIPSHIN_COLORS = {
+    "비견": "#1d4ed8", "겁재": "#1d4ed8", # 비겁
+    "식신": "#c2410c", "상관": "#c2410c", # 식상
+    "편재": "#ca8a04", "정재": "#ca8a04", # 재성
+    "편관": "#166534", "정관": "#166534", # 관성
+    "편인": "#6b7280", "정인": "#6b7280"  # 인성
+}
+
+
+# ───────────────────────────────
+# 오행 및 십신 세력 계산 함수
+# ───────────────────────────────
+def calculate_ohaeng_sipshin_strengths(saju_8char_details):
+    """
+    사주팔자의 각 글자를 기반으로 오행 및 십신의 가중치를 계산합니다.
+    saju_8char_details: {"year_gan":yg, "year_ji":yj, ..., "day_gan":dg, ...} 형태의 딕셔너리
+    반환: (ohaeng_strengths_dict, sipshin_strengths_dict)
+    """
+    day_master_gan = saju_8char_details["day_gan"]
+
+    # 분석할 8글자 (천간4 + 지지4)와 각 위치 키
+    chars_to_analyze = [
+        (saju_8char_details["year_gan"], "연간"), (saju_8char_details["year_ji"], "연지"),
+        (saju_8char_details["month_gan"], "월간"), (saju_8char_details["month_ji"], "월지"),
+        (saju_8char_details["day_gan"], "일간"), (saju_8char_details["day_ji"], "일지"),
+        (saju_8char_details["time_gan"], "시간"), (saju_8char_details["time_ji"], "시지")
+    ]
+
+    ohaeng_strengths = {oheng: 0.0 for oheng in OHENG_ORDER}
+    sipshin_strengths = {sipshin: 0.0 for sipshin in SIPSHIN_ORDER}
+
+    def get_sipshin(dm_gan, other_gan):
+        if dm_gan in SIPSHIN_MAP and other_gan in SIPSHIN_MAP[dm_gan]:
+            return SIPSHIN_MAP[dm_gan][other_gan]
+        return None # 또는 "기타" 반환
+
+    for char_val, position_key in chars_to_analyze:
+        weight = POSITIONAL_WEIGHTS.get(position_key, 0.0)
+        is_gan = "간" in position_key # 천간인지 지지인지 구분
+
+        if is_gan: # 천간인 경우
+            gan_char = char_val
+            # 오행 계산
+            ohaeng = GAN_TO_OHENG.get(gan_char)
+            if ohaeng:
+                ohaeng_strengths[ohaeng] += weight
+            
+            # 십신 계산
+            sipshin = get_sipshin(day_master_gan, gan_char)
+            if sipshin:
+                sipshin_strengths[sipshin] += weight
+        
+        else: # 지지인 경우
+            ji_char = char_val
+            if ji_char in JIJI_JANGGAN:
+                for janggan_char, proportion in JIJI_JANGGAN[ji_char].items():
+                    # 지장간의 오행 계산
+                    ohaeng = GAN_TO_OHENG.get(janggan_char)
+                    if ohaeng:
+                        ohaeng_strengths[ohaeng] += weight * proportion
+                    
+                    # 지장간의 십신 계산
+                    sipshin = get_sipshin(day_master_gan, janggan_char)
+                    if sipshin:
+                        sipshin_strengths[sipshin] += weight * proportion
+    
+    # 결과값을 소수점 한 자리까지 반올림 (JS 예제와 동일하게)
+    for o in OHENG_ORDER: 
+        ohaeng_strengths[o] = round(ohaeng_strengths[o], 1)
+    for s in SIPSHIN_ORDER: 
+        sipshin_strengths[s] = round(sipshin_strengths[s], 1)
+            
+    return ohaeng_strengths, sipshin_strengths
+
+# --- 오행 및 십신 설명 생성 함수 (HTML 예제 기반) ---
+def get_ohaeng_summary_explanation(ohaeng_counts):
+    explanation = "오행 분포는 사주의 에너지 균형을 보여줍니다. "
+    threshold = 1.5 # 이 값은 JS 예제에 명시적으로 없었으나, 설명 로직상 유사하게 설정
+    strong = []
+    weak = []
+    # JS 예제에서는 점수 자체를 보여줬으므로, 여기서는 JS의 설명 로직을 따름
+    # JS 예제에서는 단순히 강한 오행과 약한 오행을 나열
+    # 기준값은 JS 예제처럼 동적으로 하기보다, 전체적인 분포를 보고 서술하는 방식 채택
+    
+    # 가장 강한 오행과 가장 약한 오행 찾기 (간단 버전)
+    if not ohaeng_counts: return explanation + "오행 정보를 계산할 수 없습니다."
+
+    sorted_ohaeng = sorted(ohaeng_counts.items(), key=lambda item: item[1], reverse=True)
+    
+    if sorted_ohaeng[0][1] > threshold * 1.5 : # JS 예제는 특정 값 이상/이하를 강/약으로 표현하지 않음.
+                                            # 대신 상대적 강약을 서술하는 것이 좋아보임.
+        explanation += f"특히 {sorted_ohaeng[0][0]}(이)가 {sorted_ohaeng[0][1]}점으로 가장 강한 기운을 가집니다. "
+    
+    if sorted_ohaeng[-1][1] < threshold / 1.5 and sorted_ohaeng[-1][1] < sorted_ohaeng[0][1] / 2:
+         explanation += f"반면, {sorted_ohaeng[-1][0]}(이)가 {sorted_ohaeng[-1][1]}점으로 상대적으로 약한 편입니다. "
+    
+    explanation += "전체적인 균형과 조화를 이루는 것이 중요합니다."
+    return explanation
+
+def get_sipshin_summary_explanation(sipshin_counts, day_master_gan):
+    explanation = "십신은 일간(나)을 기준으로 다른 글자와의 관계를 나타내며, 사회적 관계, 성향, 재능 등을 유추해볼 수 있습니다. "
+    threshold = 1.5 # JS 예제 참고 (강한 십신 기준)
+    strong_sibsins = []
+    
+    for sibshin_name in SIPSHIN_ORDER:
+        if (sipshin_counts.get(sibshin_name, 0.0)) >= threshold:
+            strong_sibsins.append(f"{sibshin_name}({sipshin_counts.get(sibshin_name, 0.0)})")
+    
+    if strong_sibsins:
+        explanation += f"이 사주에서는 {', '.join(strong_sibsins)}의 영향력이 두드러질 수 있습니다. "
+        # 각 강한 십신에 대한 간략한 설명 추가 (JS 예제처럼)
+        temp_explanations = []
+        for s_info in strong_sibsins:
+            s_name = s_info.split('(')[0]
+            if s_name in ["비견", "겁재"]: temp_explanations.append("주체성/독립심/경쟁심")
+            elif s_name in ["식신", "상관"]: temp_explanations.append("표현력/창의력/기술 관련 재능")
+            elif s_name in ["편재", "정재"]: temp_explanations.append("현실감각/재물운용/활동성")
+            elif s_name in ["편관", "정관"]: temp_explanations.append("책임감/명예/조직 적응력")
+            elif s_name in ["편인", "정인"]: temp_explanations.append("학문/수용성/직관력")
+        
+        unique_explanations = list(set(temp_explanations)) # 중복 제거
+        if unique_explanations:
+            explanation += f" 이는 {', '.join(unique_explanations)} 등이 발달했을 가능성을 시사합니다. "
+
+    else:
+        explanation += "특별히 한쪽으로 치우치기보다는 여러 십신의 특성이 비교적 균형 있게 나타날 수 있습니다. "
+    
+    explanation += "각 십신의 긍정적인 면을 잘 발휘하고 보완하는 것이 중요합니다."
+    return explanation
+
+# ... (기존의 다른 함수들 get_saju_year, get_year_ganji 등은 이 아래에 위치) ...
+
+# ───────────────────────────────
 # 1. 절입일 데이터 로딩 (이전과 동일)
 # ───────────────────────────────
 @st.cache_data(show_spinner=False)
