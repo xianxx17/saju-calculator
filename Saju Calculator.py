@@ -808,6 +808,123 @@ def get_shinsal_detail_explanation(found_shinsals_list):
     return "<ul style='list-style-type: disc; margin-left: 20px; padding-left: 0;'>" + "".join(explanation_parts) + "</ul>"
 
 # ... (기존의 다른 함수들 determine_shinkang_shinyak, get_hap_chung_detail_explanation 등은 이 위 또는 아래에 위치) ...
+# (saju_app.py 파일에 추가될 내용)
+
+# ... (기존 get_shinsal_detail_explanation 함수 등 다음 줄에)
+
+# ───────────────────────────────
+# 용신/기신 분석용 상수 및 함수 정의
+# (사용자님이 제공해주신 HTML/JS 예제 코드의 로직을 기반으로 작성되었습니다)
+# ───────────────────────────────
+
+# 일간 오행을 기준으로 각 관계의 오행을 정의 (GAN_TO_OHENG는 이미 정의됨)
+# 1. 일간을 생하는 오행 (인성)
+OHENG_HELPER_MAP = {"목": "수", "화": "목", "토": "화", "금": "토", "수": "금"}
+# 2. 일간이 생하는 오행 (식상)
+OHENG_PRODUCES_MAP = {"목": "화", "화": "토", "토": "금", "금": "수", "수": "목"}
+# 3. 일간이 극하는 오행 (재성)
+OHENG_CONTROLS_MAP = {"목": "토", "화": "금", "토": "수", "금": "목", "수": "화"}
+# 4. 일간을 극하는 오행 (관성)
+OHENG_IS_CONTROLLED_BY_MAP = {"목": "금", "화": "수", "토": "목", "금": "화", "수": "토"}
+
+
+def determine_yongshin_gishin_simplified(day_gan_char, shinkang_status_str):
+    """
+    일간, 신강/신약 상태를 바탕으로 간략화된 용신/기신 후보 오행을 판단합니다.
+    (HTML 예제의 determine_yongshin_gishin 함수 로직 기반)
+    """
+    ilgan_ohaeng = GAN_TO_OHENG.get(day_gan_char)
+    if not ilgan_ohaeng:
+        return {
+            "yongshin": [], "gishin": [],
+            "html": "<p>일간의 오행을 알 수 없어 용신/기신을 판단할 수 없습니다.</p>"
+        }
+
+    yongshin_candidates = []
+    gishin_candidates = []
+
+    # 오행 역할 정의 (일간 기준)
+    sik상_ohaeng = OHENG_PRODUCES_MAP.get(ilgan_ohaeng)
+    jae성_ohaeng = OHENG_CONTROLS_MAP.get(ilgan_ohaeng)
+    gwan성_ohaeng = OHENG_IS_CONTROLLED_BY_MAP.get(ilgan_ohaeng)
+    in성_ohaeng = OHENG_HELPER_MAP.get(ilgan_ohaeng)
+    bi겁_ohaeng = ilgan_ohaeng # 나와 같은 오행 (비견/겁재)
+
+    if "신강" in shinkang_status_str: # 신강 또는 약간 신강 포함
+        # 용신 후보: 식상, 재성, 관성 (일간의 힘을 빼거나 적절히 제어하는 오행)
+        if sik상_ohaeng: yongshin_candidates.append(sik상_ohaeng)
+        if jae성_ohaeng: yongshin_candidates.append(jae성_ohaeng)
+        if gwan성_ohaeng: yongshin_candidates.append(gwan성_ohaeng)
+        # 기신 후보: 인성, 비겁 (일간의 힘을 더 강하게 하는 오행)
+        if in성_ohaeng: gishin_candidates.append(in성_ohaeng)
+        if bi겁_ohaeng: gishin_candidates.append(bi겁_ohaeng)
+
+    elif "신약" in shinkang_status_str: # 신약 또는 약간 신약 포함
+        # 용신 후보: 인성, 비겁 (일간의 힘을 더해주는 오행)
+        if in성_ohaeng: yongshin_candidates.append(in성_ohaeng)
+        if bi겁_ohaeng: yongshin_candidates.append(bi겁_ohaeng)
+        # 기신 후보: 식상, 재성, 관성 (일간의 힘을 더 빼거나 극하는 오행)
+        if sik상_ohaeng: gishin_candidates.append(sik상_ohaeng)
+        if jae성_ohaeng: gishin_candidates.append(jae성_ohaeng)
+        if gwan성_ohaeng: gishin_candidates.append(gwan성_ohaeng)
+
+    elif "중화" in shinkang_status_str:
+        return {
+            "yongshin": [], "gishin": [],
+            "html": "<p>중화 사주로 판단됩니다. 이 경우 특정 오행을 용신이나 기신으로 엄격히 구분하기보다는, 사주 전체의 균형과 조화를 유지하고 대운의 흐름에 유연하게 대처하는 것이 중요할 수 있습니다. 때로는 사주에 부족하거나 고립된 오행을 보충하는 방향을 고려하기도 합니다.</p>"
+        }
+    else: # shinkang_status_str이 예상치 못한 값일 경우
+        return {
+            "yongshin": [], "gishin": [],
+            "html": "<p>일간의 강약 상태가 명확하지 않아 용신/기신을 판단하기 어렵습니다.</p>"
+        }
+
+    # 중복 제거 및 정렬
+    unique_yongshin = sorted(list(set(yongshin_candidates)))
+    unique_gishin = sorted(list(set(gishin_candidates)))
+    
+    # (드물지만) 용신과 기신에 같은 오행이 들어간 경우 제거 (JS 예제 참고)
+    # common_elements = [y_el for y_el in unique_yongshin if y_el in unique_gishin]
+    # unique_yongshin = [y_el for y_el in unique_yongshin if y_el not in common_elements]
+    # unique_gishin = [g_el for g_el in unique_gishin if g_el not in common_elements]
+    # -> 현재 로직상으로는 common_elements가 거의 발생하지 않음.
+
+    html_parts = []
+    if unique_yongshin:
+        yongshin_str = ", ".join([f"<span style='color:#15803d; font-weight:bold;'>{o}({OHENG_TO_HANJA.get(o, '')})</span>" for o in unique_yongshin])
+        html_parts.append(f"<p>유력한 용신(喜神) 후보 오행: {yongshin_str}</p>")
+    else:
+        html_parts.append("<p>용신(喜神)으로 특정할 만한 오행을 명확히 구분하기 어렵습니다. (중화 사주 외)</p>")
+    
+    if unique_gishin:
+        gishin_str = ", ".join([f"<span style='color:#b91c1c; font-weight:bold;'>{o}({OHENG_TO_HANJA.get(o, '')})</span>" for o in unique_gishin])
+        html_parts.append(f"<p>주의가 필요한 기신(忌神) 후보 오행: {gishin_str}</p>")
+    else:
+        html_parts.append("<p>특별히 기신(忌神)으로 강하게 작용할 만한 오행이 두드러지지 않을 수 있습니다.</p>")
+
+    return {"yongshin": unique_yongshin, "gishin": unique_gishin, "html": "".join(html_parts)}
+
+
+def get_gaewoon_tips_html(yongshin_list):
+    """용신 오행에 따른 간단한 개운법 팁 HTML을 반환합니다."""
+    if not yongshin_list:
+        return ""
+    
+    tips_html = "<h5 style='color: #047857; margin-top: 0.8rem; margin-bottom: 0.3rem; font-size:1em;'>🍀 간단 개운법 (용신 활용)</h5><ul style='list-style:none; padding-left:0; font-size:0.9em;'>"
+    gaewoon_tips_data = {
+        "목": "<li><strong style='color:#15803d;'>목(木) 용신:</strong> 동쪽 방향, 푸른색/초록색 계열 아이템 활용. 숲이나 공원 산책, 식물 키우기, 교육/문화/기획 관련 활동.</li>",
+        "화": "<li><strong style='color:#15803d;'>화(火) 용신:</strong> 남쪽 방향, 붉은색/분홍색/보라색 계열 아이템 활용. 밝고 따뜻한 환경 조성, 예체능/방송/조명/열정적인 활동.</li>",
+        "토": "<li><strong style='color:#15803d;'>토(土) 용신:</strong> 중앙(거주지 중심), 노란색/황토색/베이지색 계열 아이템 활용. 안정적이고 편안한 환경, 명상, 신용을 중시하는 활동, 등산.</li>",
+        "금": "<li><strong style='color:#15803d;'>금(金) 용신:</strong> 서쪽 방향, 흰색/은색/금색 계열 아이템 활용. 단단하고 정돈된 환경, 금속 액세서리, 결단력과 의리를 지키는 활동, 악기 연주.</li>",
+        "수": "<li><strong style='color:#15803d;'>수(水) 용신:</strong> 북쪽 방향, 검은색/파란색/회색 계열 아이템 활용. 물가나 조용하고 차분한 환경, 지혜를 활용하는 활동, 명상이나 충분한 휴식.</li>"
+    }
+    for yongshin_ohaeng in yongshin_list:
+        tips_html += gaewoon_tips_data.get(yongshin_ohaeng, f"<li>{yongshin_ohaeng}({OHENG_TO_HANJA.get(yongshin_ohaeng,'')}) 용신에 대한 개운법 정보를 준비 중입니다.</li>")
+    
+    tips_html += "</ul><p style='font-size:0.8rem; color:#555; margin-top:0.5rem;'>* 위 내용은 일반적인 개운법이며, 개인의 전체 사주 구조와 상황에 따라 다를 수 있습니다. 참고용으로 활용하세요.</p>"
+    return tips_html
+
+# ... (기존의 다른 함수들 get_shinsal_detail_explanation 등은 이 위 또는 아래에 위치) ...
 # ───────────────────────────────
 # 오행 및 십신 세력 계산 함수
 # ───────────────────────────────
