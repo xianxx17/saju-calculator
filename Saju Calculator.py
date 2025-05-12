@@ -1542,6 +1542,61 @@ if st.sidebar.button("🧮 계산 실행", use_container_width=True, type="prima
             st.info("사주 정보가 부족하여 신살 분석을 수행할 수 없습니다.")
 
         # ... (이어서 기존의 대운, 세운 등 운세 정보 표시 부분 st.markdown("---") st.subheader(f"運 대운 ({gender})") ...)
+# (saju_app.py 파일의 if st.sidebar.button(...) 블록 내부,
+#  기존 신살 분석 표시 부분 다음에 이어서 추가)
+
+        # ... (이전 신살 분석 st.markdown(...) 코드 다음 줄부터)
+
+        # --- 용신(喜神) 및 기신(忌神) 분석 (간략) ---
+        st.markdown("---") # 구분선
+        st.subheader("☯️ 용신(喜神) 및 기신(忌神) 분석 (간략)")
+
+        # shinkang_status_result와 day_gan_char 변수가 이전 단계에서 계산되었어야 함
+        # analysis_possible 플래그도 유효해야 함
+        
+        if (analysis_possible and 
+            'shinkang_status_result' in locals() and 
+            shinkang_status_result not in ["분석 정보 없음", "분석 오류", "계산 불가"] and 
+            'day_gan_char' in locals() and day_gan_char):
+            try:
+                yongshin_gishin_info = determine_yongshin_gishin_simplified(
+                    day_gan_char, 
+                    shinkang_status_result
+                )
+                
+                # 용신/기신 판단 결과 HTML 표시
+                st.markdown(yongshin_gishin_info["html"], unsafe_allow_html=True)
+                
+                # 개운법 팁 HTML 표시
+                gaewoon_tips_html_content = get_gaewoon_tips_html(yongshin_gishin_info["yongshin"])
+                if gaewoon_tips_html_content:
+                    # HTML 예제의 gaewoon-tip 스타일 참고 (배경색, 왼쪽 테두리)
+                    st.markdown(f"""
+                    <div style='margin-top: 1rem; padding: 0.85rem 1rem; background-color: #e0f2fe; border-left: 4px solid #0284c7; border-radius: 4px; box-shadow: 0 1px 2px rgba(0,0,0,0.05);'>
+                        {gaewoon_tips_html_content}
+                    </div>
+                    """, unsafe_allow_html=True)
+                
+            except Exception as e:
+                st.warning(f"용신/기신 분석 중 오류 발생: {e}")
+                st.markdown("<p style='font-size:0.95rem; color:#b91c1c;'>용신/기신 분석 중 오류가 발생하여 결과를 표시할 수 없습니다.</p>", unsafe_allow_html=True)
+        
+        elif not analysis_possible:
+            # 이미 상단에서 "사주 기둥 중 일부가 정확히 계산되지 않아..." 등의 경고가 표시되었을 것입니다.
+            pass 
+        else: # 신강/신약 정보 등이 부족한 경우
+            st.info("일간의 강약(신강/신약) 정보가 명확하지 않아, 간략화된 용신/기신 분석을 수행하기 어렵습니다.")
+
+        # 주의사항 문구 (HTML 예제 notice 클래스 스타일 참고)
+        st.markdown("""
+        <div style="font-size: 0.85rem; color: #4b5563; margin-top: 1.5rem; padding: 0.85rem 1rem; background-color: #f9fafb; border: 1px dashed #d1d5db; border-radius: 4px;">
+            <strong style="color:#374151;">참고 사항:</strong><br>
+            여기서 제공되는 용신(喜神) 및 기신(忌神) 정보는 사주 당사자의 신강/신약을 기준으로 한 <strong>간략화된 억부용신(抑扶用神) 결과</strong>입니다. 
+            실제 정밀한 용신 판단은 사주 전체의 조후(調候 - 계절의 조화), 통관(通關 - 막힌 기운 소통), 병약(病藥 - 사주의 문제점과 해결책) 등 다양한 요소를 종합적으로 고려해야 하므로, 본 결과는 참고용으로만 활용하시고 중요한 판단은 반드시 사주 전문가와 상의하시기 바랍니다.
+        </div>
+        """, unsafe_allow_html=True)
+        
+        # ... (이어서 기존의 대운, 세운 등 운세 정보 표시 부분 st.markdown("---") st.subheader(f"運 대운 ({gender})") ...)
         # --- 대운, 세운 등 기존 운세 정보 표시 (이전과 동일) ---
         st.markdown("---") # 구분선
         st.subheader(f"運 대운 ({gender})")
