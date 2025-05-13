@@ -1619,43 +1619,43 @@ if st.sidebar.button("🧮 계산 실행", use_container_width=True, type="prima
             st.table(pd.DataFrame(get_wolun_list(ty,tm,solar_data,12), columns=["연월","간지"]))
 # (else: st.markdown(...) 부분은 기존과 동일하게 유지)
 # --- ➊ 화면 해설을 모아 지침 문자열을 만든다 ---
-guideline_parts = []
+         guideline_parts = []
 
 # 1) 명식
-guideline_parts.append(f"사주 명식 ▶ 연주 {year_pillar_str}, 월주 {month_pillar_str}, 일주 {day_pillar_str}, 시주 {time_pillar_str}")
+            guideline_parts.append(f"사주 명식 ▶ 연주 {year_pillar_str}, 월주 {month_pillar_str}, 일주 {day_pillar_str}, 시주 {time_pillar_str}")
 
 # 2) 신강/신약
-plain_shinkang = get_shinkang_explanation(shinkang_status_result)
-guideline_parts.append(f"일간 강약 ▶ {shinkang_status_result}: {plain_shinkang}")
+            plain_shinkang = get_shinkang_explanation(shinkang_status_result)
+            guideline_parts.append(f"일간 강약 ▶ {shinkang_status_result}: {plain_shinkang}")
 
 # 3) 격국
-plain_gekuk = get_gekuk_explanation(gekuk_name_result)
-guideline_parts.append(f"격국 ▶ {gekuk_name_result}: {plain_gekuk}")
+            plain_gekuk = get_gekuk_explanation(gekuk_name_result)
+            guideline_parts.append(f"격국 ▶ {gekuk_name_result}: {plain_gekuk}")
 
 # 4) 합충형해파
-for kind, items in hap_chung_results_dict.items():
-    if items:
-        guideline_parts.append(f"{kind} ▶ " + ", ".join(items))
+          for kind, items in hap_chung_results_dict.items():
+                if items:
+                   guideline_parts.append(f"{kind} ▶ " + ", ".join(items))
 
 # 5) 주요 신살
-if found_shinsals_list:
-    guideline_parts.append("주요 신살 ▶ " + ", ".join(found_shinsals_list))
+                if found_shinsals_list:
+                   guideline_parts.append("주요 신살 ▶ " + ", ".join(found_shinsals_list))
 
 # 6) 용신/기신
-yongshin = yongshin_gishin_info.get("yongshin", [])
-gishin   = yongshin_gishin_info.get("gishin", [])
-if yongshin or gishin:
-    guideline_parts.append(f"용신 ▶ {', '.join(yongshin)}")
-    guideline_parts.append(f"기신 ▶ {', '.join(gishin)}")
+                   yongshin = yongshin_gishin_info.get("yongshin", [])
+                   gishin   = yongshin_gishin_info.get("gishin", [])
+                if yongshin or gishin:
+                   guideline_parts.append(f"용신 ▶ {', '.join(yongshin)}")
+                   guideline_parts.append(f"기신 ▶ {', '.join(gishin)}")
 
 # 최종 지침 문자열
-guideline_text = "\n\n".join(guideline_parts)
+                   guideline_text = "\n\n".join(guideline_parts)
 
 
 # --- ➋ 복사용 UI 추가 ---
-st.markdown("---")
-st.subheader("📋 지침 복사")
+                st.markdown("---")
+                st.subheader("📋 지침 복사")
 
 # 버튼을 누르면 아래에 text_area 로 전체 지침을 보여줍니다.
-if st.button("지침 복사하기"):
-    st.text_area("생성된 사주 상담 지침", guideline_text, height=300)
+                if st.button("지침 복사하기"):
+                   st.text_area("생성된 사주 상담 지침", guideline_text, height=300)
