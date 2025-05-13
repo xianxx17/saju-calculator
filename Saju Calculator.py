@@ -1137,32 +1137,73 @@ def get_year_ganji(saju_year):
     idx = (saju_year - 4 + 60) % 60 
     return get_ganji_from_index(idx), GAN[idx % 10], JI[idx % 12]
 
+# get_month_ganji 함수의 개선된 절기 검색 로직 (이전 답변 참고 및 일부 강조)
 def get_month_ganji(year_gan_char, birth_dt, solar_data_dict):
-    saju_year_for_month = get_saju_year(birth_dt, solar_data_dict)
-    terms_this_saju_year = solar_data_dict.get(saju_year_for_month, {})
-    terms_prev_saju_year = solar_data_dict.get(saju_year_for_month - 1, {})
-    governing_term_name = None
-    sorted_terms_this_year = sorted([(name, dt) for name, dt in terms_this_saju_year.items() if name in SAJU_MONTH_TERMS_ORDER], key=lambda x: x[1])
-    for name, dt in sorted_terms_this_year:
-        if birth_dt >= dt: governing_term_name = name
-        else: break
-    if not governing_term_name:
-        sorted_prev_year_winter_terms = sorted([(name, dt) for name, dt in terms_prev_saju_year.items() if name in ["소한", "대설"]], key=lambda x: x[1], reverse=True)
-        for name, dt in sorted_prev_year_winter_terms:
-            if birth_dt >= dt: governing_term_name = name; break
-    if not governing_term_name: return "오류(월주절기)", "", ""
-    try:
-        branch_idx_in_sason = SAJU_MONTH_TERMS_ORDER.index(governing_term_name)
-        month_ji  = SAJU_MONTH_BRANCHES[branch_idx_in_sason]
-    except ValueError: return f"오류({governing_term_name}없음)", "", ""
-    yg_idx = GAN.index(year_gan_char)
-    start_map = {0:2,5:2, 1:4,6:4, 2:6,7:6, 3:8,8:8, 4:0,9:0} 
-    start_gan_idx_for_in_month = start_map.get(yg_idx)
-    if start_gan_idx_for_in_month is None: return "오류(연간->월간맵)", "", ""
-    month_order_idx = SAJU_MONTH_BRANCHES.index(month_ji)
-    month_gan = GAN[(start_gan_idx_for_in_month + month_order_idx) % 10]
-    return month_gan + month_ji, month_gan, month_ji
+    # ... (생략) ...
+    saju_year_of_birth = get_saju_year(birth_dt, solar_data_dict) # birth_dt의 사주년도
 
+    candidate_solar_years = sorted(list(set([birth_dt.year - 1, birth_dt.year, birth_dt.year + 1]))) # birth_dt의 양력년도 기준 +-1년 탐색
+
+    all_relevant_terms = []
+    for solar_yr in candidate_solar_years:
+        year_terms_data = solar_data_dict.get(solar_yr, {})
+        for term_name, term_datetime_obj in year_terms_data.items():
+            if term_name in SAJU_MONTH_TERMS_ORDER:
+                all_relevant_terms.append({'name': term_name, 'datetime': term_datetime_obj})
+
+    if not all_relevant_terms:
+        return f"오류(월주절기데이터부족:{birth_dt.strftime('%Y%m%d')})", "", ""
+
+    all_relevant_terms.sort(key=lambda x: x['datetime'])
+
+    governing_term_name = None
+    for term_info in all_relevant_terms:
+        if birth_dt >= term_info['datetime']:
+            # 이 절기가 birth_dt가 속한 사주년도(saju_year_of_birth)와 동일한 사주년도에 속하는지 확인
+            # 이렇게 하면 다른 사주년도의 절기가 잘못 적용되는 것을 방지할 수 있음
+            if get_saju_year(term_info['datetime'], solar_data_dict) == saju_year_of_birth:
+                governing_term_name = term_info['name']
+            # 만약 위 조건 없이, 단순히 시간상 가장 가까운 과거 절기를 찾는다면,
+            # 예를 들어 2025년 사주년 초입(입춘 직후)인데, 실수로 2024년 사주년 말(대한)이 선택될 수도 있음.
+            # (위 로직에서는 get_saju_year를 통해 필터링 시도)
+            # 더 간단하게는, birth_dt 직전의 절기를 찾으면 됨.
+            # governing_term_name = term_info['name'] # 이 로직으로 하면 시간상 가장 가까운 과거 절기.
+        else:
+            break # birth_dt보다 늦은 절기를 만나면 루프 종료
+
+    if not governing_term_name:
+         # birth_dt가 수집된 모든 절기 중 가장 이른 것보다도 빠를 경우 (데이터 시작점 이전)
+         # 또는 필터링 조건으로 인해 적합한 절기를 찾지 못한 경우
+        return f"오류(월주기준절기못찾음:{birth_dt.strftime('%Y%m%d')})", "", ""
+
+    # ... (이후 월지, 월간 계산 로직은 동일) ...
+    try:
+        month_ji_idx = SAJU_MONTH_TERMS_ORDER.index(governing_term_name)
+        month_ji = SAJU_MONTH_BRANCHES[month_ji_idx]
+    except ValueError:
+        return f"오류(월지변환실패:{governing_term_name})", "", ""
+
+    # 월간 계산
+    try:
+        yg_idx = GAN.index(year_gan_char)
+    except ValueError:
+        return f"오류(알수없는연간:{year_gan_char})", "", ""
+        
+    start_map = {0:2, 5:2, 1:4, 6:4, 2:6, 7:6, 3:8, 8:8, 4:0, 9:0}
+    start_gan_idx_for_in_month = start_map.get(yg_idx)
+
+    if start_gan_idx_for_in_month is None:
+        return f"오류(월두법맵핑실패:{year_gan_char})", "", ""
+
+    try:
+        current_month_order_idx = SAJU_MONTH_BRANCHES.index(month_ji)
+    except ValueError:
+         return f"오류(알수없는월지:{month_ji})", "", ""
+
+    month_gan_idx = (start_gan_idx_for_in_month + current_month_order_idx) % 10
+    month_gan = GAN[month_gan_idx]
+
+    return month_gan + month_ji, month_gan, month_ji
 def date_to_jd(year, month, day):
     y = year; m = month
     if m <= 2: y -= 1; m += 12
