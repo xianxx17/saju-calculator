@@ -1290,7 +1290,10 @@ def get_daewoon(year_gan_char, gender, birth_dt, month_gan_char, month_ji_char, 
                 break
     
     if target_term_dt is None:
-        # 이 경우는 보통 생일이 절기 데이터의 시작/끝 경계에 매우 가깝거나,
+        # 이 조건문 다음에는 반드시 들여쓰기 된 코드가 와야 합니다.
+        # 예를 들어, 오류 메시지와 함께 기본값을 반환합니다.
+        return ["오류(대운 목표 절기 탐색 실패)"], 0, is_sunhaeng # <--- 이와 같이 들여쓰기 된 return 문을 추가하세요.
+    # ▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲ 여기까지 수정 ▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲
 
         
 def get_seun_list(start_year, n=10): 
