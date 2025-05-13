@@ -1471,22 +1471,26 @@ if st.sidebar.button("🧮 계산 실행", use_container_width=True, type="prima
 
         guideline_text = "\n\n".join(guideline_parts)
 
-        # --- ➋ 복사용 UI 추가 (클립보드 직접 복사) ---
-        st.markdown("---")
-        st.subheader("📋 사주 상담 지침 (아래 버튼 클릭 시 클립보드에 복사)")
-        
-        if 'guideline_text' in locals() and isinstance(guideline_text, str) and guideline_text.strip():
-            st_copy_to_clipboard(guideline_text, 
-                                 before_copy_label="📋 상담 지침 클립보드에 복사하기", 
-                                 after_copy_label="✅ 복사 완료! (클립보드를 확인하세요)", 
-                                 key="clipboard_guideline_button_final") # 키 이름 변경
-        elif 'guideline_text' in locals() and isinstance(guideline_text, str) and not guideline_text.strip():
-            st.warning("복사할 지침 내용이 없습니다 (내용이 비어 있음).")
-        else: 
-            st.error("지침 내용(guideline_text)이 생성되지 않아 복사할 수 없습니다.")
+        # (이전 코드 ... guideline_text = "\n\n".join(guideline_parts) 다음 ...)
 
-        # 모든 계산 및 UI 생성이 성공적으로 끝났음을 표시
-        st.session_state.saju_calculated_once = True
+            # --- ➋ 복사용 UI 추가 (클립보드 직접 복사 - 수정된 방식) ---
+            st.markdown("---")
+            st.subheader("📋 사주 상담 지침 (아래 버튼 클릭 시 클립보드에 복사)")
+
+            if 'guideline_text' in locals() and isinstance(guideline_text, str) and guideline_text.strip():
+                # copy_component 사용법: 첫 번째 인자는 버튼에 표시될 텍스트, content 인자에 복사할 내용 전달
+                copy_component("📋 상담 지침 클립보드에 복사하기", content=guideline_text, key="clipboard_guideline_actual_working")
+                # 참고: 이 컴포넌트의 성공/실패 메시지 방식은 st_copy_to_clipboard와 다를 수 있습니다.
+                # 별도의 성공 메시지 매개변수가 없을 수 있으며, 버튼 클릭 시 바로 복사만 수행할 수 있습니다.
+                # 작동 후 st.success 등으로 직접 피드백을 주는 것을 고려해볼 수 있으나, 
+                # 컴포넌트가 클릭 후 즉시 페이지를 재실행할 수 있어 타이밍 문제가 있을 수 있습니다.
+            elif 'guideline_text' in locals() and isinstance(guideline_text, str) and not guideline_text.strip():
+                st.warning("복사할 지침 내용이 없습니다 (내용이 비어 있음).")
+            else: 
+                st.error("지침 내용(guideline_text)이 생성되지 않아 복사할 수 없습니다.")
+
+            # 모든 계산 및 UI 생성이 성공적으로 끝났음을 표시
+            st.session_state.saju_calculated_once = True
     # --- "if birth_dt_input_valid and birth_dt:" 블록의 끝 ---
 # --- "if st.sidebar.button(...)" 블록의 끝 ---
 
