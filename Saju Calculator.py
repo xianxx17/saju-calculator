@@ -8,7 +8,6 @@ from datetime import datetime, timedelta
 import os
 import math
 import re
-from clipboard_component import copy_component # 이렇게 변경합니다.
 
 # --- 음력 변환을 위한 라이브러리 임포트 ---
 try:
@@ -1252,15 +1251,15 @@ def get_ilun_list(year_val, month_val, day_val, n=10):
         output_ilun.append((current_dt.strftime("%Y-%m-%d"), ilun_ganji))
     return output_ilun
 
-# (이전에 모든 함수 및 상수 정의, import 문들이 와야 합니다)
-# import streamlit as st
-# import pandas as pd
-# from datetime import datetime, timedelta
-# import os
-# import math
-# import re
-# from lunardate import LunarDate # 이미 try-except로 처리됨
-# from clipboard_component import copy_component # 클립보드 복사 기능을 위해 추가해야 할 import
+# (이전에 모든 함수 및 상수 정의, 기본 import 문들이 와야 합니다)
+# 예: import streamlit as st
+#     import pandas as pd
+#     from datetime import datetime, timedelta
+#     import os
+#     import math
+#     import re
+#     from lunardate import LunarDate # 이미 try-except로 처리됨
+#     # from clipboard_component import copy_component # 이 라인은 삭제합니다.
 
 # ───────────────────────────────
 # 3. Streamlit UI
@@ -1276,9 +1275,7 @@ if 'interpretation_segments' not in st.session_state:
 if 'show_interpretation_guide_on_click' not in st.session_state:
     st.session_state.show_interpretation_guide_on_click = False # expander 표시 여부
 
-
 st.sidebar.header("1. 출생 정보")
-# --- 달력 유형 선택 (양력/음력) ---
 calendar_type = st.sidebar.radio("달력 유형", ("양력", "음력"), index=0, horizontal=True)
 is_leap_month = False
 if calendar_type == "음력":
@@ -1287,7 +1284,7 @@ if calendar_type == "음력":
 current_year_for_input = datetime.now().year
 min_input_year = 1900
 max_input_year = 2100
-if solar_data: # solar_data가 정상 로드되었을때만 min/max 설정
+if solar_data:
     min_input_year = min(solar_data.keys()) if solar_data else 1900
     max_input_year = max(solar_data.keys()) if solar_data else 2100
 
@@ -1301,13 +1298,10 @@ gender = st.sidebar.radio("성별", ("남성","여성"), horizontal=True, index=
 st.sidebar.header("2. 운세 기준일 (양력)")
 today = datetime.now()
 ty = st.sidebar.number_input("기준 연도 ", min_input_year, max_input_year + 10, today.year, help=f"양력 기준년도 ({min_input_year}~{max_input_year+10} 범위)")
-# 고유 키를 사용하여 Streamlit 위젯 ID 충돌 방지
-tm = st.sidebar.number_input("기준 월  ", 1, 12, today.month, key="ui_target_month")
-td = st.sidebar.number_input("기준 일  ", 1, 31, today.day, key="ui_target_day")
+tm = st.sidebar.number_input("기준 월  ", 1, 12, today.month, key="ui_target_month_final")
+td = st.sidebar.number_input("기준 일  ", 1, 31, today.day, key="ui_target_day_final")
 
-# "계산 실행" 버튼 클릭 시 실행되는 로직
 if st.sidebar.button("🧮 계산 실행", use_container_width=True, type="primary"):
-    # 세션 상태 초기화
     st.session_state.interpretation_segments = []
     st.session_state.saju_calculated_once = False
     st.session_state.show_interpretation_guide_on_click = False
@@ -1315,7 +1309,6 @@ if st.sidebar.button("🧮 계산 실행", use_container_width=True, type="prima
     birth_dt_input_valid = True
     birth_dt = None
 
-    # 날짜 변환 로직
     if calendar_type == "양력":
         try:
             birth_dt = datetime(by,bm,bd,bh,bmin)
@@ -1323,7 +1316,7 @@ if st.sidebar.button("🧮 계산 실행", use_container_width=True, type="prima
             st.error("❌ 유효하지 않은 양력 날짜/시간입니다. 다시 확인해주세요.")
             birth_dt_input_valid = False
             st.stop()
-    else: # 음력인 경우
+    else: # 음력
         try:
             lunar_conv_date = LunarDate(by, bm, bd, is_leap_month)
             solar_equiv_date = lunar_conv_date.toSolarDate()
@@ -1338,7 +1331,6 @@ if st.sidebar.button("🧮 계산 실행", use_container_width=True, type="prima
             birth_dt_input_valid = False
             st.stop()
     
-    # 유효한 생년월일 정보가 있을 경우에만 아래 로직 실행
     if birth_dt_input_valid and birth_dt:
         # --- 사주 명식 계산 ---
         saju_year_val = get_saju_year(birth_dt, solar_data)
@@ -1374,20 +1366,19 @@ if st.sidebar.button("🧮 계산 실행", use_container_width=True, type="prima
             if not val_char or len(val_char) != 1 or \
                (key.endswith("_gan") and val_char not in GAN) or \
                (key.endswith("_ji") and val_char not in JI):
-                analysis_possible = False
-                break
+                analysis_possible = False; break
         
         ohaeng_strengths, sipshin_strengths = {}, {}
-        shinkang_status_result, gekuk_name_result = "분석 정보 없음", "분석 정보 없음" # 기본값 초기화
-        shinkang_explanation_html, gekuk_explanation_html = "", "" # 기본값 초기화
-        hap_chung_results_dict, found_shinsals_list, yongshin_gishin_info = {}, [], {} # 기본값 초기화
+        shinkang_status_result, gekuk_name_result = "분석 정보 없음", "분석 정보 없음"
+        shinkang_explanation_html, gekuk_explanation_html = "", ""
+        hap_chung_results_dict, found_shinsals_list, yongshin_gishin_info = {}, [], {}
 
         if analysis_possible:
             try:
                 ohaeng_strengths, sipshin_strengths = calculate_ohaeng_sipshin_strengths(saju_8char_for_analysis)
             except Exception as e:
                 st.warning(f"오행/십신 분석 중 오류 발생: {e}")
-                analysis_possible = False # 후속 분석에 영향
+                analysis_possible = False 
         else:
             st.warning("사주 기둥 중 일부가 정확히 계산되지 않아 상세 분석을 수행할 수 없습니다.")
 
@@ -1401,7 +1392,7 @@ if st.sidebar.button("🧮 계산 실행", use_container_width=True, type="prima
             ohaeng_df_for_chart = pd.DataFrame.from_dict(ohaeng_strengths, orient='index', columns=['세력']).reindex(OHENG_ORDER)
             st.bar_chart(ohaeng_df_for_chart, height=300, use_container_width=True)
             ohaeng_summary_exp_text_for_display = get_ohaeng_summary_explanation(ohaeng_strengths)
-            st.markdown(f"<div class='analysis-box ohaeng-box'>{ohaeng_summary_exp_text_for_display}</div>", unsafe_allow_html=True) # 스타일 클래스 사용 예시
+            st.markdown(f"<div style='font-size: 0.95rem; color: #4b5563; margin-top: 1rem; padding: 0.75rem; background-color: #f9fafb; border-radius: 4px; border-left: 3px solid #60a5fa;'>{ohaeng_summary_exp_text_for_display}</div>", unsafe_allow_html=True)
             ohaeng_analysis_text_for_segment = strip_html_tags(ohaeng_summary_exp_text_for_display)
             ohaeng_table_data = {"오행": OHENG_ORDER, "세력": [ohaeng_strengths.get(o,0.0) for o in OHENG_ORDER]}
             ohaeng_table_data_for_segment = pd.DataFrame(ohaeng_table_data).to_markdown(index=False)
@@ -1412,7 +1403,7 @@ if st.sidebar.button("🧮 계산 실행", use_container_width=True, type="prima
             st.session_state.interpretation_segments.append(("오행 세력표", ohaeng_table_data_for_segment))
         else:
             st.session_state.interpretation_segments.append(("오행 세력표", "세력표 정보 없음"))
-
+        
         # --- 십신 분석 표시 ---
         st.markdown("---")
         st.subheader("🌟 십신(十神) 분석")
@@ -1423,7 +1414,7 @@ if st.sidebar.button("🧮 계산 실행", use_container_width=True, type="prima
             sipshin_df_for_chart = pd.DataFrame.from_dict(sipshin_strengths, orient='index', columns=['세력']).reindex(SIPSHIN_ORDER)
             st.bar_chart(sipshin_df_for_chart, height=400, use_container_width=True)
             sipshin_summary_exp_text_for_display = get_sipshin_summary_explanation(sipshin_strengths, day_gan_char)
-            st.markdown(f"<div class='analysis-box sipshin-box'>{sipshin_summary_exp_text_for_display}</div>", unsafe_allow_html=True) # 스타일 클래스 사용 예시
+            st.markdown(f"<div style='font-size: 0.95rem; color: #4b5563; margin-top: 1rem; padding: 0.75rem; background-color: #f9fafb; border-radius: 4px; border-left: 3px solid #7c3aed;'>{sipshin_summary_exp_text_for_display}</div>", unsafe_allow_html=True)
             sipshin_analysis_text_for_segment = strip_html_tags(sipshin_summary_exp_text_for_display)
             sipshin_table_data = {"십신": SIPSHIN_ORDER, "세력": [sipshin_strengths.get(s,0.0) for s in SIPSHIN_ORDER]}
             sipshin_table_data_for_segment = pd.DataFrame(sipshin_table_data).to_markdown(index=False)
@@ -1447,11 +1438,17 @@ if st.sidebar.button("🧮 계산 실행", use_container_width=True, type="prima
             except Exception as e:
                 st.warning(f"신강/신약 또는 격국 분석 중 오류 발생: {e}")
                 shinkang_status_result, gekuk_name_result = "분석 오류", "분석 오류"
+        # 변수 초기화 보장
+        shinkang_status_result = shinkang_status_result if 'shinkang_status_result' in locals() else "분석 정보 없음"
+        shinkang_explanation_html = shinkang_explanation_html if 'shinkang_explanation_html' in locals() else ""
+        gekuk_name_result = gekuk_name_result if 'gekuk_name_result' in locals() else "분석 정보 없음"
+        gekuk_explanation_html = gekuk_explanation_html if 'gekuk_explanation_html' in locals() else ""
+        
         col_shinkang, col_gekuk = st.columns(2)
         with col_shinkang:
-            st.markdown(f"""<div class='analysis-card'><h4 class='card-title'>일간 강약 (신강/신약)</h4><p class='card-result shinkang-result'>{shinkang_status_result}</p><p class='card-text'>{shinkang_explanation_html}</p></div>""", unsafe_allow_html=True)
+            st.markdown(f"""<div style="background-color: #f9fafb; border: 1px solid #e5e7eb; border-radius: 0.5rem; padding: 1.25rem; height: 100%; box-shadow: 0 1px 3px rgba(0,0,0,0.05);"><h4 style="font-size: 1.05em; font-weight: 600; color: #1f2937; margin-bottom: 0.6rem; border-bottom: 1px solid #e5e7eb; padding-bottom: 0.4rem;">일간 강약 (신강/신약)</h4><p style="font-size: 1.2em; font-weight: bold; color: #2563eb; margin-bottom: 0.75rem;">{shinkang_status_result}</p><p style="font-size: 0.9em; color: #4b5563; line-height: 1.6;">{shinkang_explanation_html}</p></div>""", unsafe_allow_html=True)
         with col_gekuk:
-            st.markdown(f"""<div class='analysis-card'><h4 class='card-title'>격국(格局) 분석</h4><p class='card-result gekuk-result'>{gekuk_name_result}</p><p class='card-text'>{gekuk_explanation_html}</p></div>""", unsafe_allow_html=True)
+            st.markdown(f"""<div style="background-color: #f9fafb; border: 1px solid #e5e7eb; border-radius: 0.5rem; padding: 1.25rem; height: 100%; box-shadow: 0 1px 3px rgba(0,0,0,0.05);"><h4 style="font-size: 1.05em; font-weight: 600; color: #1f2937; margin-bottom: 0.6rem; border-bottom: 1px solid #e5e7eb; padding-bottom: 0.4rem;">격국(格局) 분석</h4><p style="font-size: 1.2em; font-weight: bold; color: #059669; margin-bottom: 0.75rem;">{gekuk_name_result}</p><p style="font-size: 0.9em; color: #4b5563; line-height: 1.6;">{gekuk_explanation_html}</p></div>""", unsafe_allow_html=True)
         st.session_state.interpretation_segments.append(("💪 일간 강약", f"**{shinkang_status_result}**\n{strip_html_tags(shinkang_explanation_html)}"))
         st.session_state.interpretation_segments.append(("💪 격국(格局) 분석", f"**{gekuk_name_result}**\n{strip_html_tags(gekuk_explanation_html)}"))
 
@@ -1459,7 +1456,7 @@ if st.sidebar.button("🧮 계산 실행", use_container_width=True, type="prima
         st.markdown("---")
         st.subheader("🤝💥 합충형해파 분석")
         hap_chung_text_for_segment_parts = []
-        if analysis_possible and 'day_gan_char' in locals() and day_gan_char:
+        if analysis_possible and 'day_gan_char' in locals() and day_gan_char: # day_gan_char는 이전 단계에서 정의됨
             try:
                 hap_chung_results_dict = analyze_hap_chung_interactions(saju_8char_for_analysis)
                 if any(v for v in hap_chung_results_dict.values()):
@@ -1467,18 +1464,17 @@ if st.sidebar.button("🧮 계산 실행", use_container_width=True, type="prima
                     output_html_parts = []
                     for interaction_type, found_list in hap_chung_results_dict.items():
                         if found_list:
-                            output_html_parts.append(f"<h6 class='interaction-title'>{interaction_type}</h6>")
-                            items_html = "".join([f"<li class='interaction-item'>{item}</li>" for item in found_list])
-                            output_html_parts.append(f"<ul class='interaction-list'>{items_html}</ul>")
+                            output_html_parts.append(f"<h6 style='color: #374151; margin-top: 0.6rem; margin-bottom: 0.2rem; font-size:0.95em;'>{interaction_type}</h6>")
+                            items_html = "".join([f"<li style='background-color: #eef2ff; color: #312e81; padding: 0.3rem 0.6rem; border-radius: 0.25rem; margin-bottom: 0.25rem; font-size: 0.9rem;'>{item}</li>" for item in found_list])
+                            output_html_parts.append(f"<ul style='list-style: none; padding-left: 0; margin-bottom: 0.5rem;'>{items_html}</ul>")
                             hap_chung_text_for_segment_parts.append(f"**{interaction_type}**\n" + "\n".join([f"- {item}" for item in found_list]))
                     if output_html_parts: st.markdown("".join(output_html_parts), unsafe_allow_html=True)
-                    
                     hap_chung_explanation_html_val = get_hap_chung_detail_explanation(hap_chung_results_dict)
-                    st.markdown(f"<div class='analysis-box hapchung-explanation-box'>{hap_chung_explanation_html_val}</div>", unsafe_allow_html=True)
+                    st.markdown(f"<div style='font-size: 0.95rem; color: #4b5563; margin-top: 1rem; padding: 0.75rem; background-color: #f9fafb; border-radius: 4px; border-left: 3px solid #f59e0b;'>{hap_chung_explanation_html_val}</div>", unsafe_allow_html=True)
                     hap_chung_text_for_segment_parts.append(f"\n**설명:**\n{strip_html_tags(hap_chung_explanation_html_val)}")
                 else:
                     msg = "특별히 두드러지는 합충형해파의 관계가 나타나지 않습니다. 비교적 안정적인 구조일 수 있습니다."
-                    st.markdown(f"<p class='info-text'>{msg}</p>", unsafe_allow_html=True)
+                    st.markdown(f"<p style='font-size:0.95rem; color:#4b5563;'>{msg}</p>", unsafe_allow_html=True)
                     hap_chung_text_for_segment_parts.append(msg)
             except Exception as e:
                 st.warning(f"합충형해파 분석 중 오류 발생: {e}")
@@ -1496,15 +1492,15 @@ if st.sidebar.button("🧮 계산 실행", use_container_width=True, type="prima
                 found_shinsals_list = analyze_shinsal(saju_8char_for_analysis)
                 if found_shinsals_list:
                     st.markdown("##### 발견된 주요 신살:")
-                    items_html = "".join([f"<li class='shinsal-item'>{item}</li>" for item in found_shinsals_list])
-                    st.markdown(f"<ul class='shinsal-list'>{items_html}</ul>", unsafe_allow_html=True)
+                    items_html = "".join([f"<li style='background-color: #eef2ff; color: #312e81; padding: 0.4rem 0.75rem; border-radius: 0.25rem; margin-bottom: 0.3rem; font-size: 0.9rem; line-height: 1.5;'>{item}</li>" for item in found_shinsals_list])
+                    st.markdown(f"<ul style='list-style: none; padding-left: 0; margin-bottom: 0.5rem;'>{items_html}</ul>", unsafe_allow_html=True)
                     shinsal_explanation_html_val = get_shinsal_detail_explanation(found_shinsals_list)
-                    st.markdown(f"<div class='analysis-box shinsal-explanation-box'>{shinsal_explanation_html_val}</div>", unsafe_allow_html=True)
+                    st.markdown(f"<div style='font-size: 0.95rem; color: #4b5563; margin-top: 1rem; padding: 0.75rem; background-color: #f9fafb; border-radius: 4px; border-left: 3px solid #8b5cf6;'>{shinsal_explanation_html_val}</div>", unsafe_allow_html=True)
                     shinsal_text_for_segment_parts.append("**발견된 주요 신살:**\n" + "\n".join([f"- {item}" for item in found_shinsals_list]))
                     shinsal_text_for_segment_parts.append(f"\n**설명:**\n{strip_html_tags(shinsal_explanation_html_val)}")
                 else:
                     msg = "특별히 나타나는 주요 신살이 없습니다."
-                    st.markdown(f"<p class='info-text'>{msg}</p>", unsafe_allow_html=True)
+                    st.markdown(f"<p style='font-size:0.95rem; color:#4b5563;'>{msg}</p>", unsafe_allow_html=True)
                     shinsal_text_for_segment_parts.append(msg)
             except Exception as e:
                 st.warning(f"신살 분석 중 오류 발생: {e}")
@@ -1518,8 +1514,6 @@ if st.sidebar.button("🧮 계산 실행", use_container_width=True, type="prima
         st.subheader("☯️ 용신(喜神) 및 기신(忌神) 분석 (간략)")
         yongshin_text_for_segment = "용신/기신 분석 정보 없음"
         gaewoon_text_for_segment = ""
-        yongshin_notice_text_for_segment = strip_html_tags("""<div><strong>참고 사항:</strong><br> 여기서 제공되는 용신(喜神) 및 기신(忌神) 정보는 ... (내용 생략) ... 중요한 판단은 반드시 사주 전문가와 상의하시기 바랍니다.</div>""") # 원본 참고사항 텍스트
-
         if (analysis_possible and
             'shinkang_status_result' in locals() and shinkang_status_result not in ["분석 정보 없음", "분석 오류", "계산 불가"] and
             'day_gan_char' in locals() and day_gan_char):
@@ -1528,20 +1522,21 @@ if st.sidebar.button("🧮 계산 실행", use_container_width=True, type="prima
                 st.markdown(yongshin_gishin_info["html"], unsafe_allow_html=True)
                 gaewoon_tips_html_content = get_gaewoon_tips_html(yongshin_gishin_info["yongshin"])
                 if gaewoon_tips_html_content:
-                    st.markdown(f"<div class='gaewoon-box'>{gaewoon_tips_html_content}</div>", unsafe_allow_html=True)
+                    st.markdown(f"<div style='margin-top: 1rem; padding: 0.85rem 1rem; background-color: #e0f2fe; border-left: 4px solid #0284c7; border-radius: 4px; box-shadow: 0 1px 2px rgba(0,0,0,0.05);'>{gaewoon_tips_html_content}</div>", unsafe_allow_html=True)
                 yongshin_text_for_segment = strip_html_tags(yongshin_gishin_info.get("html", "분석 정보 없음"))
                 if yongshin_gishin_info.get("yongshin"):
                     gaewoon_text_for_segment = strip_html_tags(gaewoon_tips_html_content)
             except Exception as e:
                 st.warning(f"용신/기신 분석 중 오류 발생: {e}")
         elif not analysis_possible:
-            pass # 이미 상단에서 경고
+            pass 
         else:
             st.info("일간의 강약 정보가 명확하지 않아 용신/기신 분석을 수행하기 어렵습니다.")
         
-        st.markdown("""<div class="notice-box"><strong style="color:#374151;">참고 사항:</strong><br> 여기서 제공되는 용신(喜神) 및 기신(忌神) 정보는 사주 당사자의 신강/신약을 기준으로 한 <strong>간략화된 억부용신(抑扶用神) 결과</strong>입니다. 실제 정밀한 용신 판단은 사주 전체의 조후(調候 - 계절의 조화), 통관(通關 - 막힌 기운 소통), 병약(病藥 - 사주의 문제점과 해결책) 등 다양한 요소를 종합적으로 고려해야 하므로, 본 결과는 참고용으로만 활용하시고 중요한 판단은 반드시 사주 전문가와 상의하시기 바랍니다.</div>""", unsafe_allow_html=True)
+        yongshin_notice_html = """<div style="font-size: 0.85rem; color: #4b5563; margin-top: 1.5rem; padding: 0.85rem 1rem; background-color: #f9fafb; border: 1px dashed #d1d5db; border-radius: 4px;"><strong style="color:#374151;">참고 사항:</strong><br> 여기서 제공되는 용신(喜神) 및 기신(忌神) 정보는 사주 당사자의 신강/신약을 기준으로 한 <strong>간략화된 억부용신(抑扶用神) 결과</strong>입니다. 실제 정밀한 용신 판단은 사주 전체의 조후(調候 - 계절의 조화), 통관(通關 - 막힌 기운 소통), 병약(病藥 - 사주의 문제점과 해결책) 등 다양한 요소를 종합적으로 고려해야 하므로, 본 결과는 참고용으로만 활용하시고 중요한 판단은 반드시 사주 전문가와 상의하시기 바랍니다.</div>"""
+        st.markdown(yongshin_notice_html, unsafe_allow_html=True)
         st.session_state.interpretation_segments.append(("☯️ 용신(喜神) 및 기신(忌神) 분석 (간략)", yongshin_text_for_segment + ("\n\n" + gaewoon_text_for_segment if gaewoon_text_for_segment else "")))
-        st.session_state.interpretation_segments.append(("용신/기신 참고사항", yongshin_notice_text_for_segment))
+        st.session_state.interpretation_segments.append(("용신/기신 참고사항", strip_html_tags(yongshin_notice_html)))
 
         # --- 대운, 세운 등 ---
         st.markdown("---")
@@ -1595,52 +1590,44 @@ if st.sidebar.button("🧮 계산 실행", use_container_width=True, type="prima
         # 현재 들여쓰기 레벨(if birth_dt_input_valid and birth_dt: 블록 내부)을 유지합니다.
         guideline_parts = []
 
-        # 1) 명식
-        if all(var in locals() for var in ['year_pillar_str', 'month_pillar_str', 'day_pillar_str', 'time_pillar_str']):
-            guideline_parts.append(f"사주 명식 ▶ 연주 {year_pillar_str}, 월주 {month_pillar_str}, 일주 {day_pillar_str}, 시주 {time_pillar_str}")
+        if 'year_pillar_str' in locals(): # 명식 정보가 있다면 추가
+             guideline_parts.append(f"사주 명식 ▶ 연주 {year_pillar_str}, 월주 {month_pillar_str}, 일주 {day_pillar_str}, 시주 {time_pillar_str}")
         else:
             guideline_parts.append("사주 명식 ▶ 정보 부족")
 
-        # 2) 신강/신약
-        if 'shinkang_status_result' in locals() and 'shinkang_explanation_html' in locals() and shinkang_status_result not in ["분석 정보 없음", "분석 오류"]:
+        if 'shinkang_status_result' in locals() and 'shinkang_explanation_html' in locals():
             guideline_parts.append(f"일간 강약 ▶ {shinkang_status_result}: {strip_html_tags(shinkang_explanation_html)}")
         else:
             guideline_parts.append(f"일간 강약 ▶ {locals().get('shinkang_status_result', '정보 없음')}")
-
-        # 3) 격국
-        if 'gekuk_name_result' in locals() and 'gekuk_explanation_html' in locals() and gekuk_name_result not in ["분석 정보 없음", "분석 오류"]:
+        
+        if 'gekuk_name_result' in locals() and 'gekuk_explanation_html' in locals():
             guideline_parts.append(f"격국 ▶ {gekuk_name_result}: {strip_html_tags(gekuk_explanation_html)}")
         else:
             guideline_parts.append(f"격국 ▶ {locals().get('gekuk_name_result', '정보 없음')}")
         
-        # 4) 합충형해파
         if 'hap_chung_results_dict' in locals() and hap_chung_results_dict:
-            has_hap_chung_interaction_for_guideline = False
+            has_interaction = False
             for kind, items in hap_chung_results_dict.items():
                 if items:
                     guideline_parts.append(f"{kind} ▶ " + ", ".join(items))
-                    has_hap_chung_interaction_for_guideline = True
-            if not has_hap_chung_interaction_for_guideline and any(hap_chung_results_dict.values()): # 결과는 있으나 아이템이 없는 경우 (거의 없음)
-                 guideline_parts.append("합충형해파 ▶ 상세 내용 확인 필요")
-            elif not any(hap_chung_results_dict.values()): # 결과 자체가 없는 경우
+                    has_interaction = True
+            if not has_interaction:
                  guideline_parts.append("합충형해파 ▶ 특별한 상호작용 없음")
         else:
             guideline_parts.append("합충형해파 ▶ 분석 정보 없음")
 
-        # 5) 주요 신살
         if 'found_shinsals_list' in locals() and found_shinsals_list:
             guideline_parts.append("주요 신살 ▶ " + ", ".join(found_shinsals_list))
-        elif 'found_shinsals_list' in locals():
+        elif 'found_shinsals_list' in locals(): 
              guideline_parts.append("주요 신살 ▶ 특별히 나타나는 신살 없음")
         else:
             guideline_parts.append("주요 신살 ▶ 분석 정보 없음")
 
-        # 6) 용신/기신
         if 'yongshin_gishin_info' in locals() and yongshin_gishin_info:
             yongshin = yongshin_gishin_info.get("yongshin", [])
             gishin  = yongshin_gishin_info.get("gishin", [])
-            yongshin_str = ', '.join(yongshin) if yongshin else "정보 없음 또는 해당 없음"
-            gishin_str = ', '.join(gishin) if gishin else "정보 없음 또는 해당 없음"
+            yongshin_str = ', '.join(yongshin) if yongshin else "해당 없음"
+            gishin_str = ', '.join(gishin) if gishin else "해당 없음"
             guideline_parts.append(f"용신 ▶ {yongshin_str}")
             guideline_parts.append(f"기신 ▶ {gishin_str}")
         else:
@@ -1648,19 +1635,21 @@ if st.sidebar.button("🧮 계산 실행", use_container_width=True, type="prima
 
         guideline_text = "\n\n".join(guideline_parts)
 
-        # --- ➋ 복사용 UI 추가 (클립보드 직접 복사 - clipboard_component 사용) ---
+        # --- ➋ 복사용 UI 추가 (수동 복사 방식 st.text_area 사용) ---
         st.markdown("---")
-        st.subheader("📋 사주 상담 지침 (아래 버튼 클릭 시 클립보드에 복사)")
+        st.subheader("📋 생성된 사주 상담 지침 (수동 복사)")
         
-        if 'guideline_text' in locals() and isinstance(guideline_text, str) and guideline_text.strip():
-            # clipboard_component의 copy_component 사용
-            copy_component("📋 상담 지침 클립보드에 복사하기", content=guideline_text, component_key="clipboard_guideline_copy_component")
-        elif 'guideline_text' in locals() and isinstance(guideline_text, str) and not guideline_text.strip():
-            st.warning("복사할 지침 내용이 없습니다 (내용이 비어 있음).")
+        if 'guideline_text' in locals() and isinstance(guideline_text, str):
+            if guideline_text.strip():
+                st.text_area("아래 내용을 전체 선택(Ctrl+A 또는 Cmd+A) 후 복사(Ctrl+C 또는 Cmd+C)하세요:", 
+                             guideline_text, 
+                             height=300, 
+                             key="guideline_text_area_for_manual_copy")
+            else:
+                st.warning("생성된 지침 내용이 없습니다 (내용이 비어 있음).")
         else: 
-            st.error("지침 내용(guideline_text)이 생성되지 않아 복사할 수 없습니다.")
+            st.error("지침 내용(guideline_text)이 생성되지 않아 표시할 수 없습니다.")
 
-        # 모든 계산 및 UI 생성이 성공적으로 끝났음을 표시
         st.session_state.saju_calculated_once = True
     # --- "if birth_dt_input_valid and birth_dt:" 블록의 끝 ---
 # --- "if st.sidebar.button(...)" 블록의 끝 ---
@@ -1671,7 +1660,7 @@ if st.sidebar.button("🧮 계산 실행", use_container_width=True, type="prima
 if st.session_state.get('saju_calculated_once', False):
     st.markdown("---") # 4칸 들여쓰기
 
-    if st.button("📖 전체 풀이 내용 다시 보기 (클릭하여 열기/닫기)", use_container_width=True, key="toggle_interpretation_guide_expander_button_final_v2"): # 4칸 들여쓰기
+    if st.button("📖 전체 풀이 내용 다시 보기 (클릭하여 열기/닫기)", use_container_width=True, key="toggle_interpretation_guide_expander_button_final_v3"): # 4칸 들여쓰기
         st.session_state.show_interpretation_guide_on_click = not st.session_state.get('show_interpretation_guide_on_click', False) # 8칸 들여쓰기
 
     if st.session_state.get('show_interpretation_guide_on_click', False): # 4칸 들여쓰기
