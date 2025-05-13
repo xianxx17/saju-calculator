@@ -1234,15 +1234,107 @@ def get_seun_list(start_year, n=10):
     return [(y, get_year_ganji(y)[0]) for y in range(start_year, start_year+n)]
 
 def get_wolun_list(base_year, base_month, solar_data_dict, n=12):
+    """
+    절기 기준으로 월운을 계산합니다.
+    base_year, base_month: 기준이 되는 양력 연도와 월
+    solar_data_dict: 절기 정보 딕셔셔너리
+    n: 계산할 월운의 개월 수
+    """
     output_wolun = []
-    for i in range(n):
-        current_year=base_year+(base_month-1+i)//12; current_month_num=(base_month-1+i)%12+1
-        seun_gan_char=get_year_ganji(current_year)[1] 
-        dummy_birth_dt_for_wolun=datetime(current_year,current_month_num,15,12,0) 
-        wolun_ganji,_,_=get_month_ganji(seun_gan_char,dummy_birth_dt_for_wolun,solar_data_dict)
-        output_wolun.append((f"{current_year}-{current_month_num:02d}", wolun_ganji))
-    return output_wolun
+    try:
+        # 기준 양력월의 1일을 기준으로 시작 사주월을 찾습니다.
+        ref_date_for_start_month = datetime(base_year, base_month, 1, 12, 0)
+    except ValueError:
+        # 잘못된 양력 연월 입력 시 오류 처리
+        return [(f"오류: 잘못된 기준월 {base_year}-{base_month}", "계산불가")]
 
+    # 1. 시작 기준일이 속한 사주년도와 해당 사주년도의 연간을 구합니다.
+    start_saju_year = get_saju_year(ref_date_for_start_month, solar_data_dict)
+    start_year_ganji_full, start_year_gan, _ = get_year_ganji(start_saju_year)
+    if "오류" in start_year_ganji_full:
+        return [(f"오류: 시작 사주년도({start_saju_year}) 연간 계산 실패", "계산불가")]
+
+    # 2. 시작 기준일이 속한 사주월의 월지(Month Branch)를 구합니다.
+    #    get_month_ganji 함수는 주어진 날짜(ref_date_for_start_month)를 기준으로
+    #    절기를 판단하여 정확한 월주를 반환합니다.
+    _, _, start_month_ji = get_month_ganji(start_year_gan, ref_date_for_start_month, solar_data_dict)
+    if "오류" in start_month_ji or not start_month_ji:
+        return [(f"오류: 시작월주 계산 실패 (기준일: {base_year}-{base_month}-01)", "계산불가")]
+
+    # 3. 시작 사주월의 인덱스를 SAJU_MONTH_BRANCHES 리스트에서 찾습니다. (0:인월, 1:묘월, ...)
+    try:
+        start_month_idx = SAJU_MONTH_BRANCHES.index(start_month_ji)
+    except ValueError:
+        return [(f"오류: 알 수 없는 시작월 지지 ({start_month_ji})", "계산불가")]
+
+    # 각 사주월에 해당하는 대표적인 양력월 정보 (월이름, 대표일자, 사주년도 대비 양력년도 오프셋, 대표 양력월 숫자)
+    # 예: 인월(0)은 사주년도의 2월 15일경, 축월(11)은 (사주년도+1)의 1월 15일경으로 간주하여 dummy 날짜 생성
+    # 이 dummy 날짜는 get_month_ganji가 정확한 절기월을 판단하는 데 사용됩니다.
+    month_representative_details = [
+        # (월지, 대표일, 양력년 오프셋, 대표 양력월)
+        ("인", 15, 0, 2), ("묘", 15, 0, 3), ("진", 15, 0, 4),
+        ("사", 15, 0, 5), ("오", 15, 0, 6), ("미", 15, 0, 7),
+        ("신", 15, 0, 8), ("유", 15, 0, 9), ("술", 15, 0, 10),
+        ("해", 15, 0, 11),("자", 15, 0, 12),("축", 15, 1, 1)
+    ]
+
+    for i in range(n):
+        # 현재 계산할 사주월의 인덱스 (0~11 순환)
+        current_month_saju_idx = (start_month_idx + i) % 12
+        # 현재 계산할 사주월이 속한 사주년도
+        current_saju_year = start_saju_year + (start_month_idx + i) // 12
+
+        # 현재 사주년도의 연간을 구합니다.
+        current_year_ganji_full, year_gan_for_wolun, _ = get_year_ganji(current_saju_year)
+        if "오류" in current_year_ganji_full:
+            # 만약 연간 계산에 오류가 있다면 해당 월운은 오류로 표시하고 넘어갑니다.
+            target_month_branch_char = SAJU_MONTH_BRANCHES[current_month_saju_idx]
+            target_term_name = SAJU_MONTH_TERMS_ORDER[current_month_saju_idx]
+            error_label = f"{current_saju_year}년 {target_month_branch_char}월({target_term_name})"
+            output_wolun.append((error_label, "오류(연간계산실패)"))
+            continue
+
+        # 현재 사주월에 해당하는 대표 양력 정보를 가져옵니다.
+        _, representative_day, solar_year_offset, representative_solar_month = month_representative_details[current_month_saju_idx]
+
+        try:
+            # 월주 계산을 위한 dummy 날짜를 생성합니다.
+            # 이 날짜는 get_month_ganji가 어떤 절기월의 간지를 계산해야 하는지 알려주는 역할만 합니다.
+            # 예를 들어, 2024년(사주년)의 인월(2월) 월운을 구하고 싶다면, 양력 2024년 2월 15일경을 dummy 날짜로 사용.
+            # 2024년(사주년)의 축월(다음해 1월) 월운을 구하고 싶다면, 양력 2025년 1월 15일경을 dummy 날짜로 사용.
+            dummy_dt_solar_year = current_saju_year + solar_year_offset
+            dummy_birth_dt_for_wolun = datetime(dummy_dt_solar_year, representative_solar_month, representative_day, 12, 0)
+        except ValueError:
+            target_month_branch_char = SAJU_MONTH_BRANCHES[current_month_saju_idx]
+            target_term_name = SAJU_MONTH_TERMS_ORDER[current_month_saju_idx]
+            error_label = f"{current_saju_year}년 {target_month_branch_char}월({target_term_name})"
+            output_wolun.append((error_label, "오류(대표날짜생성실패)"))
+            continue
+
+        # 생성된 dummy 날짜와 해당 사주년도의 연간을 사용하여 월주(월운 간지)를 계산합니다.
+        wolun_ganji, _, wolun_ji_calculated = get_month_ganji(year_gan_for_wolun, dummy_birth_dt_for_wolun, solar_data_dict)
+
+        # 최종적으로 표시될 레이블과 계산된 월운 간지를 저장합니다.
+        # 레이블은 "사주년도 + 계산된월지 + (해당월의절기명)" 형태로 표시합니다.
+        if "오류" in wolun_ganji or not wolun_ji_calculated:
+            # 월주 계산에 실패한 경우
+            target_month_branch_char = SAJU_MONTH_BRANCHES[current_month_saju_idx] # 예상 월지
+            target_term_name = SAJU_MONTH_TERMS_ORDER[current_month_saju_idx]    # 예상 절기
+            display_label = f"{current_saju_year}년 {target_month_branch_char}월({target_term_name})"
+            actual_wolun_ganji = "오류" if "오류" in wolun_ganji else wolun_ganji # wolun_ganji가 None일 수도 있으므로
+        else:
+            try:
+                # 계산된 월지(wolun_ji_calculated)에 해당하는 절기명을 찾습니다.
+                term_name_for_display = SAJU_MONTH_TERMS_ORDER[SAJU_MONTH_BRANCHES.index(wolun_ji_calculated)]
+                display_label = f"{current_saju_year}년 {wolun_ji_calculated}월({term_name_for_display})"
+                actual_wolun_ganji = wolun_ganji
+            except ValueError: # wolun_ji_calculated가 SAJU_MONTH_BRANCHES에 없는 예외적인 경우
+                display_label = f"{current_saju_year}년 {wolun_ji_calculated}(?)월" # 월지만 표시
+                actual_wolun_ganji = wolun_ganji
+
+        output_wolun.append((display_label, actual_wolun_ganji))
+
+    return output_wolun
 def get_ilun_list(year_val, month_val, day_val, n=10):
     base_dt = datetime(year_val, month_val, day_val); output_ilun = []
     for i in range(n):
