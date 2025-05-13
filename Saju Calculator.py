@@ -1635,6 +1635,57 @@ if st.sidebar.button("🧮 계산 실행", use_container_width=True, type="prima
 
         guideline_text = "\n\n".join(guideline_parts)
 
+        
+        # --- 대운, 세운, 월운, 일운 정보를 guideline_parts에 추가 ---
+
+        # 7) 대운 정보 추가
+        # 'daewoon_start_info' 와 'daewoon_df' 변수가 이전에 정의되어 있어야 합니다.
+        # 'gender' 변수도 사용됩니다.
+        daewoon_guideline_text_parts = []
+        if 'daewoon_start_info' in locals() and daewoon_start_info:
+            daewoon_guideline_text_parts.append(daewoon_start_info) # 예: "대운 시작 나이: 약 3세 (순행)" 또는 오류 메시지
+            if 'daewoon_df' in locals() and isinstance(daewoon_df, pd.DataFrame) and not daewoon_df.empty:
+                # DataFrame을 문자열로 변환 (헤더 포함, 인덱스 제외)
+                daewoon_guideline_text_parts.append(daewoon_df.to_string(index=False, header=True))
+            
+            if daewoon_guideline_text_parts: # 실제 추가할 내용이 있다면
+                 guideline_parts.append(f"運 대운 ({gender if 'gender' in locals() else ''}) ▶\n" + "\n".join(daewoon_guideline_text_parts))
+            else: # 정보가 없는 경우 (daewoon_start_info만 있고 df가 없는 경우 등)
+                 guideline_parts.append(f"運 대운 ({gender if 'gender' in locals() else ''}) ▶ 상세 정보 없음")
+
+        elif 'month_pillar_str' in locals() and "오류" in month_pillar_str: # 월주 오류로 대운 계산 자체가 안된 경우
+            guideline_parts.append(f"運 대운 ({gender if 'gender' in locals() else ''}) ▶ 월주 오류로 대운 정보 생성 불가")
+        else: # 그 외의 경우
+            guideline_parts.append(f"運 대운 ({gender if 'gender' in locals() else ''}) ▶ 정보 없음 또는 생성 실패")
+
+
+        # 8) 기준일 운세 (세운, 월운, 일운) 정보 추가
+        # 'ty', 'tm', 'td' (기준일 연월일) 변수와
+        # 'seun_df', 'wolun_df', 'ilun_df' DataFrame 변수들이 이전에 정의되어 있어야 합니다.
+        unse_guideline_sub_parts = []
+        unse_title_for_guideline = f"📅 기준일({ty if 'ty' in locals() else '?'}-{tm if 'tm' in locals() else '?'}-{td if 'td' in locals() else '?'}) 운세"
+
+        if 'seun_df' in locals() and isinstance(seun_df, pd.DataFrame) and not seun_df.empty:
+            unse_guideline_sub_parts.append(f"세운 ({ty if 'ty' in locals() else '?'}년~):\n{seun_df.to_string(index=False, header=True)}")
+        else:
+            unse_guideline_sub_parts.append(f"세운 ({ty if 'ty' in locals() else '?'}년~): 정보 없음")
+        
+        if 'wolun_df' in locals() and isinstance(wolun_df, pd.DataFrame) and not wolun_df.empty:
+            unse_guideline_sub_parts.append(f"월운 ({ty if 'ty' in locals() else '?'}년 {tm if 'tm' in locals() else '?':02d}월~):\n{wolun_df.to_string(index=False, header=True)}")
+        else:
+            unse_guideline_sub_parts.append(f"월운 ({ty if 'ty' in locals() else '?'}년 {tm if 'tm' in locals() else '?':02d}월~): 정보 없음")
+
+        if 'ilun_df' in locals() and isinstance(ilun_df, pd.DataFrame) and not ilun_df.empty:
+            unse_guideline_sub_parts.append(f"일운 ({ty if 'ty' in locals() else '?}-{tm if 'tm' in locals() else '?':02d}-{td if 'td' in locals() else '?':02d}~):\n{ilun_df.to_string(index=False, header=True)}")
+        else:
+            unse_guideline_sub_parts.append(f"일운 ({ty if 'ty' in locals() else '?}-{tm if 'tm' in locals() else '?':02d}-{td if 'td' in locals() else '?':02d}~): 정보 없음")
+        
+        guideline_parts.append(f"{unse_title_for_guideline} ▶\n" + "\n\n".join(unse_guideline_sub_parts))
+        # --- 대운/세운 등 정보 추가 끝 ---
+
+        guideline_text = "\n\n".join(guideline_parts)
+
+
         # --- ➋ 복사용 UI 추가 (수동 복사 방식 st.text_area 사용) ---
         st.markdown("---")
         st.subheader("📋 생성된 사주 상담 지침 (수동 복사)")
