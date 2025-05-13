@@ -1696,51 +1696,57 @@ if st.sidebar.button("🧮 계산 실행", use_container_width=True, type="prima
         guideline_text = "\n\n".join(guideline_parts)
 
 
-# (기존 코드 ... guideline_text = "\n\n".join(guideline_parts) 다음 ...)
+# (이전 코드 ... guideline_text = "\n\n".join(guideline_parts) 다음 ...)
+# 이하는 'if birth_dt_input_valid and birth_dt:' 블록 내부에 있어야 하며,
+# guideline_text 가 정의된 후, 그리고 해당 블록의 다른 순차적 코드들과
+# 동일한 들여쓰기 수준을 가져야 합니다. (예: 8칸 들여쓰기)
 
             # --- ➋ 복사용 UI 추가 (클립보드 직접 복사) ---
-                st.markdown("---")
-                st.subheader("📋 사주 상담 지침 (아래 버튼 클릭 시 클립보드에 복사)")
+            st.markdown("---") # 예: 8칸 들여쓰기
+            st.subheader("📋 사주 상담 지침 (아래 버튼 클릭 시 클립보드에 복사)") # 예: 8칸 들여쓰기
             
             # guideline_text 변수에 저장된 내용을 클립보드에 복사하는 버튼 생성
             # 매개변수 이름을 before_copy_label 과 after_copy_label 로 변경해봅니다.
-            if 'guideline_text' in locals() and isinstance(guideline_text, str) and guideline_text.strip(): # guideline_text가 비어있지 않은지 확인
+            if 'guideline_text' in locals() and isinstance(guideline_text, str) and guideline_text.strip(): # 예: 8칸 들여쓰기
                 st_copy_to_clipboard(guideline_text, 
                                      before_copy_label="📋 상담 지침 클립보드에 복사하기", 
                                      after_copy_label="✅ 복사 완료! (클립보드를 확인하세요)", 
-                                     key="clipboard_guideline_button")
-            elif 'guideline_text' in locals() and isinstance(guideline_text, str) and not guideline_text.strip():
-                st.warning("복사할 지침 내용이 없습니다 (내용이 비어 있음).")
-            else: # guideline_text 자체가 정의되지 않은 경우 (이전 단계에서 문제가 있었을 수 있음)
-                st.error("지침 내용(guideline_text)이 생성되지 않아 복사할 수 없습니다.")
+                                     key="clipboard_guideline_button") # 예: 12칸 들여쓰기
+            elif 'guideline_text' in locals() and isinstance(guideline_text, str) and not guideline_text.strip(): # 예: 8칸 들여쓰기
+                st.warning("복사할 지침 내용이 없습니다 (내용이 비어 있음).") # 예: 12칸 들여쓰기
+            else: # guideline_text 자체가 정의되지 않은 경우 (이전 단계에서 문제가 있었을 수 있음) # 예: 8칸 들여쓰기
+                st.error("지침 내용(guideline_text)이 생성되지 않아 복사할 수 없습니다.") # 예: 12칸 들여쓰기
 
             # 모든 계산 및 UI 생성이 성공적으로 끝났음을 표시
-            st.session_state.saju_calculated_once = True
-    # 여기에 "if birth_dt_input_valid and birth_dt:" 블록의 끝이 옵니다.
+            st.session_state.saju_calculated_once = True # 예: 8칸 들여쓰기
+    # 여기에 "if birth_dt_input_valid and birth_dt:" 블록의 끝이 옵니다. (들여쓰기 4칸으로 줄어듦)
+# 여기에 "if st.sidebar.button(...)" 블록의 끝이 옵니다. (들여쓰기 0칸으로 줄어듦)
+
 
 # --- "풀이 내용 지침으로 보기" 버튼 및 결과 표시 (expander) ---
-# 이 섹션은 if st.sidebar.button(...) 블록 바깥, 메인 페이지 영역에 위치합니다.
-if st.session_state.get('saju_calculated_once', False):
-    st.markdown("---")
+# 이 섹션은 if st.sidebar.button(...) 블록 바깥, 메인 페이지 영역에 위치하며, 들여쓰기 0칸에서 시작합니다.
+if st.session_state.get('saju_calculated_once', False): # 들여쓰기 0칸
+    st.markdown("---") # 들여쓰기 4칸 (if 블록 내부) <- 이전 1702 라인 오류 지점일 가능성
 
-    if st.button("📖 전체 풀이 내용 다시 보기 (클릭하여 열기/닫기)", use_container_width=True, key="toggle_interpretation_guide_expander_button"):
-        st.session_state.show_interpretation_guide_on_click = not st.session_state.get('show_interpretation_guide_on_click', False)
+    if st.button("📖 전체 풀이 내용 다시 보기 (클릭하여 열기/닫기)", use_container_width=True, key="toggle_interpretation_guide_expander_button"): # 들여쓰기 4칸
+        st.session_state.show_interpretation_guide_on_click = not st.session_state.get('show_interpretation_guide_on_click', False) # 들여쓰기 8칸
 
-    if st.session_state.get('show_interpretation_guide_on_click', False):
-        with st.expander("📖 전체 풀이 내용 (텍스트 지침)", expanded=True):
-            if st.session_state.get('interpretation_segments') and len(st.session_state.interpretation_segments) > 0:
-                current_time_str = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-                full_text_guide = f"# ✨ 종합 사주 풀이 결과 ({current_time_str})\n\n"
+    if st.session_state.get('show_interpretation_guide_on_click', False): # 들여쓰기 4칸
+        with st.expander("📖 전체 풀이 내용 (텍스트 지침)", expanded=True): # 들여쓰기 8칸
+            if st.session_state.get('interpretation_segments') and len(st.session_state.interpretation_segments) > 0: # 들여쓰기 12칸
+                current_time_str = datetime.now().strftime('%Y-%m-%d %H:%M:%S') # 들여쓰기 16칸
+                full_text_guide = f"# ✨ 종합 사주 풀이 결과 ({current_time_str})\n\n" # 들여쓰기 16칸
 
-                for title, content in st.session_state.interpretation_segments:
-                    content_to_display = content if content and isinstance(content, str) else "내용 없음"
-                    full_text_guide += f"## {title}\n\n{content_to_display.strip()}\n\n---\n\n"
+                for title, content in st.session_state.interpretation_segments: # 들여쓰기 16칸
+                    content_to_display = content if content and isinstance(content, str) else "내용 없음" # 들여쓰기 20칸
+                    full_text_guide += f"## {title}\n\n{content_to_display.strip()}\n\n---\n\n" # 들여쓰기 20칸
 
-                st.markdown(full_text_guide)
-                st.info("위 내용을 선택하여 복사한 후, 원하시는 곳에 붙여넣어 활용하세요.")
-            else:
-                st.markdown("표시할 풀이 내용이 없습니다. '계산 실행' 버튼을 눌러 사주 분석을 먼저 진행해주세요.")
+                st.markdown(full_text_guide) # 들여쓰기 16칸
+                st.info("위 내용을 선택하여 복사한 후, 원하시는 곳에 붙여넣어 활용하세요.") # 들여쓰기 16칸
+            else: # 들여쓰기 12칸
+                st.markdown("표시할 풀이 내용이 없습니다. '계산 실행' 버튼을 눌러 사주 분석을 먼저 진행해주세요.") # 들여쓰기 16칸
 
 # 앱 하단에 표시될 수 있는 초기 안내 (만약 계산된 내용이 없다면)
-if not st.session_state.get('saju_calculated_once', False):
-    st.info("화면 왼쪽의 사이드바에서 출생 정보를 입력하고 '🧮 계산 실행' 버튼을 누르면, 사주 명식과 함께 상세 풀이 내용을 이곳에서 확인할 수 있습니다.")
+# 이 if문도 최상위 레벨(들여쓰기 0칸)이어야 합니다.
+if not st.session_state.get('saju_calculated_once', False): # 들여쓰기 0칸
+    st.info("화면 왼쪽의 사이드바에서 출생 정보를 입력하고 '🧮 계산 실행' 버튼을 누르면, 사주 명식과 함께 상세
