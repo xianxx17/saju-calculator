@@ -1291,7 +1291,8 @@ def get_daewoon(year_gan_char, gender, birth_dt, month_gan_char, month_ji_char, 
     
     if target_term_dt is None:
         # 이 경우는 보통 생일이 절기 데이터의 시작/끝 경계에 매우 가깝거나,
-        #
+
+        
 def get_seun_list(start_year, n=10): 
     return [(y, get_year_ganji(y)[0]) for y in range(start_year, start_year+n)]
 
