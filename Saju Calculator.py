@@ -1253,40 +1253,45 @@ def get_time_ganji(day_gan_char, hour, minute):
     return GAN[time_gan_idx] + siji_char, GAN[time_gan_idx], siji_char
 
 def get_daewoon(year_gan_char, gender, birth_dt, month_gan_char, month_ji_char, solar_data_dict):
-    is_yang_year = GAN.index(year_gan_char) % 2 == 0 
-    is_sunhaeng  = (is_yang_year and gender=="남성") or (not is_yang_year and gender=="여성")
-    saju_year_for_daewoon = get_saju_year(birth_dt, solar_data_dict)
-    relevant_terms_for_daewoon = []
-    for yr_offset in [-1, 0, 1]: 
-        year_to_check = saju_year_for_daewoon + yr_offset
-        year_terms = solar_data_dict.get(year_to_check, {})
-        for term_name, term_dt in year_terms.items():
-            if term_name in SAJU_MONTH_TERMS_ORDER: relevant_terms_for_daewoon.append({'name':term_name,'datetime':term_dt})
-    relevant_terms_for_daewoon.sort(key=lambda x: x['datetime']) 
-    if not relevant_terms_for_daewoon: return ["오류(대운절기부족)"],0,is_sunhaeng
-    target_term_dt = None
-    if is_sunhaeng: 
-        for term_info in relevant_terms_for_daewoon:
-            if term_info['datetime'] > birth_dt: target_term_dt=term_info['datetime'];break
-    else: 
-        for term_info in reversed(relevant_terms_for_daewoon): 
-            if term_info['datetime'] < birth_dt: target_term_dt=term_info['datetime'];break
-    if target_term_dt is None: return ["오류(대운목표절기없음)"],0,is_sunhaeng
-    if is_sunhaeng: days_difference=(target_term_dt - birth_dt).total_seconds()/(24*3600)
-    else: days_difference=(birth_dt - target_term_dt).total_seconds()/(24*3600)
-    daewoon_start_age = max(1, int(round(days_difference / 3))) 
-    month_ganji_str = month_gan_char + month_ji_char; current_month_gapja_idx = -1
-    for i in range(60):
-        if get_ganji_from_index(i) == month_ganji_str: current_month_gapja_idx=i;break
-    if current_month_gapja_idx == -1: return ["오류(월주갑자변환실패)"],daewoon_start_age,is_sunhaeng
-    daewoon_list_output = []
-    for i in range(10): 
-        age_display = daewoon_start_age + i * 10; next_gapja_idx = -1
-        if is_sunhaeng: next_gapja_idx=(current_month_gapja_idx+(i+1))%60
-        else: next_gapja_idx=(current_month_gapja_idx-(i+1)+60)%60 
-        daewoon_list_output.append(f"{age_display}세: {get_ganji_from_index(next_gapja_idx)}")
-    return daewoon_list_output, daewoon_start_age, is_sunhaeng
+    # 입력된 birth_dt (생일)는 datetime 객체여야 합니다.
+    if not isinstance(birth_dt, datetime):
+        return ["오류(잘못된 생년월일 객체)"], 0, False # 또는 True, 기본값
 
+    # 1. 순행/역행 결정
+    is_yang_year = GAN.index(year_gan_char) % 2 == 0
+    is_sunhaeng = (is_yang_year and gender == "남성") or (not is_yang_year and gender == "여성")
+
+    # 2. 생일(birth_dt) 전후의 절기 찾기
+    relevant_terms_for_daewoon = []
+    # solar_data_dict의 키는 양력 연도입니다. birth_dt의 양력 연도를 기준으로 탐색합니다.
+    for yr_offset in [-1, 0, 1]: # 생일의 양력년도 기준 -1년, 당해년도, +1년의 절기 데이터 탐색
+        year_to_check_in_solar_terms = birth_dt.year + yr_offset
+        year_terms = solar_data_dict.get(year_to_check_in_solar_terms, {})
+        for term_name, term_dt_obj in year_terms.items():
+            if term_name in SAJU_MONTH_TERMS_ORDER: # SAJU_MONTH_TERMS_ORDER는 12 주요 절기 리스트
+                relevant_terms_for_daewoon.append({'name': term_name, 'datetime': term_dt_obj})
+    
+    relevant_terms_for_daewoon.sort(key=lambda x: x['datetime']) # 시간순 정렬
+
+    if not relevant_terms_for_daewoon:
+        return ["오류(대운 계산용 절기 부족)"], 0, is_sunhaeng
+
+    # 3. 대운수 계산을 위한 목표 절기(target_term_dt) 찾기
+    target_term_dt = None
+    if is_sunhaeng: # 순행: 생일 이후 첫 번째 절기
+        for term_info in relevant_terms_for_daewoon:
+            if term_info['datetime'] > birth_dt:
+                target_term_dt = term_info['datetime']
+                break
+    else: # 역행: 생일 이전 마지막 절기
+        for term_info in reversed(relevant_terms_for_daewoon):
+            if term_info['datetime'] < birth_dt:
+                target_term_dt = term_info['datetime']
+                break
+    
+    if target_term_dt is None:
+        # 이 경우는 보통 생일이 절기 데이터의 시작/끝 경계에 매우 가깝거나,
+        #
 def get_seun_list(start_year, n=10): 
     return [(y, get_year_ganji(y)[0]) for y in range(start_year, start_year+n)]
 
