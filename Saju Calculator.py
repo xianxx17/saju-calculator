@@ -8,7 +8,7 @@ from datetime import datetime, timedelta
 import os
 import math
 import re
-from streamlit_clipboard import st_copy_to_clipboard
+from clipboard_component import copy_component # 이렇게 변경합니다.
 
 # --- 음력 변환을 위한 라이브러리 임포트 ---
 try:
