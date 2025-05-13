@@ -15,6 +15,43 @@ except ImportError:
     st.error("음력 변환을 위한 'lunardate' 라이브러리가 설치되지 않았습니다. 터미널에서 `pip install lunardate`를 실행해주세요.")
     st.stop()
 
+# -------------------------------
+# HTML 태그 제거 헬퍼 함수 (이 부분을 추가하거나 확인해주세요)
+# -------------------------------
+def strip_html_tags(html_string):
+    if not isinstance(html_string, str):
+        return str(html_string) # 문자열이 아니면 문자열로 변환하여 반환
+    # Remove style blocks
+    html_string = re.sub(r'<style.*?</style>', '', html_string, flags=re.DOTALL | re.IGNORECASE)
+    # Remove script blocks
+    html_string = re.sub(r'<script.*?</script>', '', html_string, flags=re.DOTALL | re.IGNORECASE)
+    # Remove all other HTML tags
+    clean_text = re.sub(r'<[^>]+>', '', html_string)
+    # Replace common HTML entities
+    clean_text = clean_text.replace('&nbsp;', ' ')
+    clean_text = clean_text.replace('&lt;', '<')
+    clean_text = clean_text.replace('&gt;', '>')
+    clean_text = clean_text.replace('&amp;', '&')
+    # Remove excessive newlines and whitespace, keep meaningful newlines
+    lines = [line.strip() for line in clean_text.splitlines()]
+    # Filter out empty lines but keep a single newline for separation if multiple were there
+    filtered_lines = []
+    last_line_was_content = False
+    for line in lines:
+        if line:
+            filtered_lines.append(line)
+            last_line_was_content = True
+        elif last_line_was_content: # Keep one empty line if it was separating content
+            filtered_lines.append("")
+            last_line_was_content = False
+
+    # Join and then strip leading/trailing newlines from the whole block
+    clean_text = '\n'.join(filtered_lines).strip()
+    # Ensure at least one newline between paragraphs if they were merged by tag removal
+    clean_text = re.sub(r'(?<=[א-힣a-zA-Z0-9])\n(?=[א-힣a-zA-Z0-9])', '\n\n', clean_text)
+    return clean_text
+
+# 이 아래부터는 기존의 상수 정의 (FILE_NAME = ...) 등이 이어집니다.
 # ───────────────────────────────
 # 0. 기본 상수 (이전과 동일)
 # ───────────────────────────────
