@@ -996,12 +996,12 @@ if st.sidebar.button("🧮 계산 실행", use_container_width=True, type="prima
 
 
 # --- "풀이 내용 지침으로 보기" 버튼 및 결과 표시 ---
-if st.session_state.saju_calculated_once:
-    st.markdown("---")
-    if st.button("📋 풀이 내용 지침으로 보기", use_container_width=True):
+        if st.session_state.saju_calculated_once:
+        st.markdown("---")
+        if st.button("📋 풀이 내용 지침으로 보기", use_container_width=True):
         st.session_state.show_interpretation_guide = True # 버튼 클릭 시 표시 플래그
 
-    if st.session_state.get('show_interpretation_guide', False): # 버튼이 클릭되었을 때만 실행
+        if st.session_state.get('show_interpretation_guide', False): # 버튼이 클릭되었을 때만 실행
         with st.expander("📖 전체 풀이 내용 (텍스트 지침)", expanded=True):
             if st.session_state.interpretation_segments:
                 full_text_guide = ""
@@ -1014,5 +1014,5 @@ if st.session_state.saju_calculated_once:
                 st.markdown("표시할 풀이 내용이 없습니다. 먼저 '계산 실행'을 해주세요.")
         # 가이드 표시 후에는 다시 숨기도록 플래그를 초기화 할 수 있음 (선택적)
         # st.session_state.show_interpretation_guide = False 
-else:
-    st.info("출생 정보를 입력하고 '계산 실행' 버튼을 누르면 사주 명식과 풀이 내용을 확인할 수 있습니다.")
+            else:
+            st.info("출생 정보를 입력하고 '계산 실행' 버튼을 누르면 사주 명식과 풀이 내용을 확인할 수 있습니다.")
