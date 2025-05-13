@@ -1346,21 +1346,51 @@ if st.sidebar.button("🧮 계산 실행", use_container_width=True, type="prima
         else:
             st.warning("사주 기둥 중 일부가 정확히 계산되지 않아 오행 및 십신 분석을 수행할 수 없습니다.")
 
-        # --- 오행 분석 표시 ---
+       # --- 오행 분석 표시 ---
         st.markdown("---")
         st.subheader("🌳🔥 오행(五行) 분석")
+        
+        # NameError 방지를 위해 변수를 미리 기본값으로 초기화합니다.
+        ohaeng_summary_exp_text_for_display = "오행 분석 정보 없음" # 화면 표시용 HTML/텍스트
+        ohaeng_analysis_text_for_segment = "오행 분석 정보 없음" # interpretation_segments 저장용 순수 텍스트
+        ohaeng_table_data_for_segment = None # interpretation_segments 저장용 테이블 데이터
+
         if ohaeng_strengths and analysis_possible:
             ohaeng_df_for_chart = pd.DataFrame.from_dict(ohaeng_strengths, orient='index', columns=['세력']).reindex(OHENG_ORDER)
             st.bar_chart(ohaeng_df_for_chart, height=300, use_container_width=True)
-            ohaeng_summary_exp_text_html = get_ohaeng_summary_explanation(ohaeng_strengths) # HTML 포함 가능성 있음
-            st.markdown(f"<div style='font-size: 0.95rem; color: #4b5563; margin-top: 1rem; padding: 0.75rem; background-color: #f9fafb; border-radius: 4px; border-left: 3px solid #60a5fa;'>{ohaeng_summary_exp_text_html}</div>", unsafe_allow_html=True)
-            # expander용 데이터 추가 (오행)
-            st.session_state.interpretation_segments.append(("🌳🔥 오행(五行) 분석", strip_html_tags(ohaeng_summary_exp_text_html)))
+            
+            # 화면 표시용 변수에 실제 분석 결과 할당
+            ohaeng_summary_exp_text_for_display = get_ohaeng_summary_explanation(ohaeng_strengths) 
+            st.markdown(f"<div style='font-size: 0.95rem; color: #4b5563; margin-top: 1rem; padding: 0.75rem; background-color: #f9fafb; border-radius: 4px; border-left: 3px solid #60a5fa;'>{ohaeng_summary_exp_text_for_display}</div>", unsafe_allow_html=True)
+            
+            # interpretation_segments에 저장할 순수 텍스트 업데이트
+            ohaeng_analysis_text_for_segment = strip_html_tags(ohaeng_summary_exp_text_for_display)
+            
             ohaeng_table_data = {"오행": OHENG_ORDER, "세력": [ohaeng_strengths.get(o, 0.0) for o in OHENG_ORDER]}
-            st.session_state.interpretation_segments.append(("오행 세력표", pd.DataFrame(ohaeng_table_data).to_markdown(index=False)))
-        elif analysis_possible:
-            st.markdown("오행 강약 정보를 계산 중이거나 표시할 데이터가 없습니다.")
+            ohaeng_table_data_for_segment = pd.DataFrame(ohaeng_table_data).to_markdown(index=False)
 
+        elif analysis_possible: 
+            # 이 경우 ohaeng_strengths가 비어있거나 유효하지 않지만, 분석 자체는 가능했던 상황
+            message = "오행 강약 정보를 계산 중이거나 표시할 데이터가 없습니다."
+            st.markdown(message)
+            # ohaeng_analysis_text_for_segment는 초기값 "오행 분석 정보 없음"을 유지합니다.
+            # ohaeng_table_data_for_segment는 초기값 None을 유지합니다.
+        # else: # analysis_possible 자체가 False인 경우 (이미 이전 단계에서 경고 메시지 출력됨)
+            # 이 경우에도 ohaeng_analysis_text_for_segment와 ohaeng_table_data_for_segment는 초기값을 유지합니다.
+
+        # 이제 항상 정의된 변수를 사용하여 interpretation_segments에 추가합니다.
+        # 이 append 호출은 if/elif 블록 바깥에 위치하여 항상 실행되도록 하거나,
+        # 또는 각 조건부 블록 내에서 해당 조건에 맞는 내용을 추가하도록 할 수 있습니다.
+        # 원래 코드에서는 이 append가 if ohaeng_strengths and analysis_possible: 블록 내에 있었습니다.
+        # 만약 이 블록이 참일 때만 추가하는 것이 의도라면, 아래 두 append 라인은 위 if 블록 안으로 다시 들어가야 합니다.
+        # 하지만 NameError를 확실히 피하기 위해, 여기서는 항상 정의된 값을 추가하도록 바깥으로 빼고,
+        # 내용이 없을 경우 "정보 없음"으로 기록되도록 합니다.
+        
+        st.session_state.interpretation_segments.append(("🌳🔥 오행(五行) 분석", ohaeng_analysis_text_for_segment))
+        if ohaeng_table_data_for_segment is not None: # 테이블 데이터가 생성된 경우에만 추가
+            st.session_state.interpretation_segments.append(("오행 세력표", ohaeng_table_data_for_segment))
+        else: # 테이블 데이터가 없는 경우, 정보 없음을 명시적으로 추가하거나 생략할 수 있습니다.
+            st.session_state.interpretation_segments.append(("오행 세력표", "세력표 정보 없음"))
 
         # --- 십신 분석 표시 ---
         st.markdown("---")
