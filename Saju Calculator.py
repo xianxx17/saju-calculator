@@ -1346,7 +1346,7 @@ def get_wolun_list(base_year, base_month, solar_data_dict, n=12):
 
     return output_wolun
     
-    def get_ilun_list(year_val, month_val, day_val, n=10):
+def get_ilun_list(year_val, month_val, day_val, n=10):
     base_dt = datetime(year_val, month_val, day_val); output_ilun = []
     for i in range(n):
         current_dt = base_dt + timedelta(days=i)
