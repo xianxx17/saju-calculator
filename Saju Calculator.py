@@ -52,6 +52,22 @@ def strip_html_tags(html_string):
     clean_text = re.sub(r'(?<=[א-힣a-zA-Z0-9])\n(?=[א-힣a-zA-Z0-9])', '\n\n', clean_text)
     return clean_text
 
+# ▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼ 만 나이 계산 함수 (여기에 추가 또는 기존 위치 확인) ▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼
+def calculate_age(birth_dt_obj, current_dt_obj):
+    """만 나이를 계산합니다."""
+    if birth_dt_obj is None:
+        return "계산 불가"  # 혹은 적절한 오류 값
+    # 출생 시점의 날짜 정보만 사용 (시간 정보는 만 나이 계산에 영향 없음)
+    birth_date_only = birth_dt_obj.date()
+    current_date_only = current_dt_obj.date()
+
+    age = current_date_only.year - birth_date_only.year
+    # 생일이 지났는지 확인 (월, 일 비교)
+    if (current_date_only.month, current_date_only.day) < (birth_date_only.month, birth_date_only.day):
+        age -= 1
+    return age
+# ▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲ 만 나이 계산 함수 끝 ▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲
+
 # 이 아래부터는 기존의 상수 정의 (FILE_NAME = ...) 등이 이어집니다.
 # ───────────────────────────────
 # 0. 기본 상수 (이전과 동일)
@@ -1121,15 +1137,6 @@ solar_data = load_solar_terms(FILE_NAME)
 if solar_data is None: 
     st.stop()
 
-# (다른 import 문들 아래 또는 함수 정의 구역에 추가)
-def calculate_age(birth_dt_obj, current_dt_obj):
-    """만 나이를 계산합니다."""
-    if birth_dt_obj is None:
-        return "계산 불가"
-    age = current_dt_obj.year - birth_dt_obj.year
-    if (current_dt_obj.month, current_dt_obj.day) < (birth_dt_obj.month, birth_dt_obj.day):
-        age -= 1
-    return age
 # ───────────────────────────────
 # 2. 사주/운세 계산 함수 (get_day_ganji는 이전 JD기반 사용, 나머지는 동일)
 # ───────────────────────────────
