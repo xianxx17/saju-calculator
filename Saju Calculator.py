@@ -1213,449 +1213,87 @@ def get_ilun_list(year_val, month_val, day_val, n=10):
         output_ilun.append((current_dt.strftime("%Y-%m-%d"), ilun_ganji))
     return output_ilun
 
-# ───────────────────────────────
-# 3. Streamlit UI
-# ───────────────────────────────
-st.set_page_config(layout="wide", page_title="🔮 종합 사주 명식 계산기")
-st.title("🔮 종합 사주 명식 및 운세 계산기")
+# (이전 코드 ... 운세 정보 표시 및 st.session_state.interpretation_segments.append(...) 다음)
+# 예를 들어, 아래 라인 다음에 새 코드가 같은 들여쓰기 레벨로 시작되어야 합니다.
+# st.session_state.interpretation_segments.append((f"📅 기준일({ty}년 {tm}월 {td}일) 운세", "\n".join(unse_text_for_copy)))
 
-st.sidebar.header("1. 출생 정보")
-# --- 달력 유형 선택 (양력/음력) ---
-calendar_type = st.sidebar.radio("달력 유형", ("양력", "음력"), index=0, horizontal=True)
-is_leap_month = False
-if calendar_type == "음력":
-    is_leap_month = st.sidebar.checkbox("윤달 (Leap Month)", help="음력 생일이 윤달인 경우 체크해주세요.")
-
-current_year_for_input = datetime.now().year
-min_input_year = 1900 # lunardate는 더 넓은 범위를 지원하지만, 절기데이터 시작에 맞춤
-max_input_year = 2100 # 절기데이터 끝에 맞춤
-if solar_data: # solar_data가 정상 로드되었을때만 min/max 설정
-    min_input_year = min(solar_data.keys()) if solar_data else 1900
-    max_input_year = max(solar_data.keys()) if solar_data else 2100
-
-by = st.sidebar.number_input("출생 연도", min_input_year, max_input_year, 1990, help=f"{calendar_type} {min_input_year}~{max_input_year}년")
-bm = st.sidebar.number_input("출생 월", 1, 12, 6)
-bd = st.sidebar.number_input("출생 일", 1, 31, 15)
-bh = st.sidebar.number_input("출생 시", 0, 23, 12)
-bmin = st.sidebar.number_input("출생 분", 0, 59, 30)
-gender = st.sidebar.radio("성별", ("남성","여성"), horizontal=True, index=0)
-
-st.sidebar.header("2. 운세 기준일 (양력)")
-today = datetime.now()
-# 운세 기준일은 양력으로만 받음 (음력 변환 미적용)
-ty = st.sidebar.number_input("기준 연도 ", min_input_year, max_input_year + 10, today.year, help=f"양력 기준년도 ({min_input_year}~{max_input_year+10} 범위)")
-tm = st.sidebar.number_input("기준 월  " , 1, 12, today.month) # 공백 추가로 키 중복 방지
-td = st.sidebar.number_input("기준 일  " , 1, 31, today.day)  # 공백 추가
-
-# (saju_app.py 파일의 if st.sidebar.button(...) 블록 내부 수정)
-
-if st.sidebar.button("🧮 계산 실행", use_container_width=True, type="primary"):
-    birth_dt_input_valid = True
-    birth_dt = None
-
-    if calendar_type == "양력":
-        try:
-            birth_dt = datetime(by,bm,bd,bh,bmin)
-        except ValueError:
-            st.error("❌ 유효하지 않은 양력 날짜/시간입니다. 다시 확인해주세요.")
-            birth_dt_input_valid = False
-            st.stop()
-    else: # 음력인 경우
-        try:
-            lunar_conv_date = LunarDate(by, bm, bd, is_leap_month)
-            solar_equiv_date = lunar_conv_date.toSolarDate()
-            birth_dt = datetime(solar_equiv_date.year, solar_equiv_date.month, solar_equiv_date.day, bh, bmin)
-            st.sidebar.info(f"음력 {by}년 {bm}월 {bd}일{' (윤달)' if is_leap_month else ''}은 양력 {birth_dt.strftime('%Y-%m-%d')} 입니다.")
-        except ValueError as e: 
-            st.error(f"❌ 음력 날짜 변환 오류: {e}. 유효한 음력 날짜와 윤달 여부를 확인해주세요.")
-            birth_dt_input_valid = False
-            st.stop()
-        except Exception as e: 
-            st.error(f"❌ 음력 날짜 처리 중 알 수 없는 오류: {e}")
-            birth_dt_input_valid = False
-            st.stop()
-    
-    if birth_dt_input_valid and birth_dt:
-        # --- 사주 명식 계산 (birth_dt는 항상 양력 datetime 객체) ---
-        saju_year_val = get_saju_year(birth_dt, solar_data)
-        year_pillar_str, year_gan_char, year_ji_char = get_year_ganji(saju_year_val)
-        month_pillar_str, month_gan_char, month_ji_char = get_month_ganji(year_gan_char, birth_dt, solar_data)
-        day_pillar_str, day_gan_char, day_ji_char = get_day_ganji(birth_dt.year, birth_dt.month, birth_dt.day)
-        time_pillar_str, time_gan_char, time_ji_char = get_time_ganji(day_gan_char, birth_dt.hour, birth_dt.minute)
-
-        # --- 명식 기본 정보 표시 ---
-        st.subheader("📜 사주 명식")
-        ms_data = {
-            "구분":["천간","지지","간지"],
-            "시주":[time_gan_char if "오류" not in time_pillar_str else "?", time_ji_char if "오류" not in time_pillar_str else "?", time_pillar_str if "오류" not in time_pillar_str else "오류"],
-            "일주":[day_gan_char if "오류" not in day_pillar_str else "?", day_ji_char if "오류" not in day_pillar_str else "?", day_pillar_str if "오류" not in day_pillar_str else "오류"],
-            "월주":[month_gan_char if "오류" not in month_pillar_str else "?", month_ji_char if "오류" not in month_pillar_str else "?", month_pillar_str if "오류" not in month_pillar_str else "오류"],
-            "연주":[year_gan_char if "오류" not in year_pillar_str else "?", year_ji_char if "오류" not in year_pillar_str else "?", year_pillar_str if "오류" not in year_pillar_str else "오류"]
-        }
-        ms_df = pd.DataFrame(ms_data).set_index("구분")
-        st.table(ms_df)
-        st.caption(f"사주 기준 연도 (입춘 기준): {saju_year_val}년")
-
-        # --- 오행 및 십신 세력 계산 ---
-        saju_8char_for_analysis = {
-            "year_gan": year_gan_char, "year_ji": year_ji_char,
-            "month_gan": month_gan_char, "month_ji": month_ji_char,
-            "day_gan": day_gan_char, "day_ji": day_ji_char,
-            "time_gan": time_gan_char, "time_ji": time_ji_char
-        }
-        
-        analysis_possible = True
-        # 각 간지 글자가 유효한지 (한 글자인지, GAN 또는 JI 리스트에 있는지) 확인
-        for key, val_char in saju_8char_for_analysis.items():
-            if not val_char or len(val_char) != 1: # 비어있거나 길이가 1이 아니면 분석 불가
-                analysis_possible = False; break
-            if key.endswith("_gan") and val_char not in GAN:
-                analysis_possible = False; break
-            if key.endswith("_ji") and val_char not in JI:
-                analysis_possible = False; break
-        
-        ohaeng_strengths = {}
-        sipshin_strengths = {}
-
-        if analysis_possible:
-            try:
-                ohaeng_strengths, sipshin_strengths = calculate_ohaeng_sipshin_strengths(saju_8char_for_analysis)
-            except Exception as e:
-                st.warning(f"오행/십신 분석 중 오류 발생: {e}")
-                analysis_possible = False # 분석 실패 처리
-        else:
-            st.warning("사주 기둥 중 일부가 정확히 계산되지 않아 오행 및 십신 분석을 수행할 수 없습니다.")
-
-       # (saju_app.py 파일의 if st.sidebar.button(...) 블록 내부 수정)
-
-        # ... (기존 명식 표시 st.table(ms_df) 및 st.caption(...) 다음 줄부터)
-
-        # --- 오행 분석 표시 ---
-        st.markdown("---") # 구분선
-        st.subheader("🌳🔥 오행(五行) 분석")
-        if ohaeng_strengths and analysis_possible: # ohaeng_strengths는 이전 단계에서 계산된 딕셔너리
-            # 차트용 데이터 준비 (Pandas DataFrame)
-            # OHENG_ORDER 순서대로 표시하기 위해 reindex 사용
-            ohaeng_df_for_chart = pd.DataFrame.from_dict(
-                ohaeng_strengths, orient='index', columns=['세력']
-            ).reindex(OHENG_ORDER)
-
-            st.bar_chart(ohaeng_df_for_chart, height=300, use_container_width=True) # height는 조절 가능
-
-            # 오행별 기본 설명 (차트 아래 또는 옆에 둘 수 있음)
-            # 현재는 차트 아래에 요약 설명만 두겠습니다.
-            # 이전 박스에 있던 각 오행별 설명(예: 목 - 성장, 시작...)은 차트와 중복될 수 있어
-            # 요약 설명으로 대체하거나, 필요시 st.expander 등으로 다시 추가할 수 있습니다.
-            
-            ohaeng_summary_exp_text = get_ohaeng_summary_explanation(ohaeng_strengths)
-            st.markdown(f"<div style='font-size: 0.95rem; color: #4b5563; margin-top: 1rem; padding: 0.75rem; background-color: #f9fafb; border-radius: 4px; border-left: 3px solid #60a5fa;'>{ohaeng_summary_exp_text}</div>", unsafe_allow_html=True)
-        
-        elif analysis_possible:
-             st.markdown("오행 강약 정보를 계산 중이거나 표시할 데이터가 없습니다.")
-        # (analysis_possible이 False인 경우 이미 위에서 경고 메시지 표시됨)
-
-
-        # --- 십신 분석 표시 ---
-        st.markdown("---") # 구분선
-        st.subheader("🌟 십신(十神) 분석")
-        if sipshin_strengths and analysis_possible: # sipshin_strengths는 이전 단계에서 계산된 딕셔너리
-            # 차트용 데이터 준비 (Pandas DataFrame)
-            # SIPSHIN_ORDER 순서대로 표시하기 위해 reindex 사용
-            sipshin_df_for_chart = pd.DataFrame.from_dict(
-                sipshin_strengths, orient='index', columns=['세력']
-            ).reindex(SIPSHIN_ORDER)
-
-            st.bar_chart(sipshin_df_for_chart, height=400, use_container_width=True) # 십신은 10개이므로 높이 조절
-
-            sipshin_summary_exp_text = get_sipshin_summary_explanation(sipshin_strengths, day_gan_char)
-            st.markdown(f"<div style='font-size: 0.95rem; color: #4b5563; margin-top: 1rem; padding: 0.75rem; background-color: #f9fafb; border-radius: 4px; border-left: 3px solid #7c3aed;'>{sipshin_summary_exp_text}</div>", unsafe_allow_html=True)
-
-        elif analysis_possible:
-            st.markdown("십신 강약 정보를 계산 중이거나 표시할 데이터가 없습니다.")
-        # (analysis_possible이 False인 경우 이미 위에서 경고 메시지 표시됨)
-
-        # ... (이어서 기존의 신강/신약 및 격국 분석 표시 부분 st.markdown("---") st.subheader(...) ...)
-# (saju_app.py 파일의 if st.sidebar.button(...) 블록 내부,
-#  기존 십신 분석 표시 부분 다음에 이어서 추가)
-
-        # ... (이전 십신 분석 요약 설명 st.markdown(...) 다음 줄부터)
-
-        # --- 신강/신약 및 격국 분석 ---
-        st.markdown("---") # 구분선
-        st.subheader("💪 일간 강약 및 격국(格局) 분석")
-
-        shinkang_status_result = "분석 정보 없음"
-        shinkang_explanation_html = ""
-        gekuk_name_result = "분석 정보 없음"
-        gekuk_explanation_html = ""
-
-        # 오행/십신 분석이 가능했고, 결과가 있을 때만 신강/신약 및 격국 분석 시도
-        if analysis_possible and ohaeng_strengths and sipshin_strengths:
-            try:
-                shinkang_status_result = determine_shinkang_shinyak(sipshin_strengths)
-                shinkang_explanation_html = get_shinkang_explanation(shinkang_status_result)
-            except Exception as e:
-                st.warning(f"신강/신약 분석 중 오류 발생: {e}")
-                shinkang_status_result = "분석 오류"
-            
-            try:
-                # 격국 판단에는 일간, 월간, 월지, 그리고 십신 강약 정보가 필요합니다.
-                gekuk_name_result = determine_gekuk(
-                    day_gan_char,       # 일간
-                    month_gan_char,     # 월간
-                    month_ji_char,      # 월지 (한글)
-                    sipshin_strengths   # 십신 강약 딕셔너리
-                )
-                gekuk_explanation_html = get_gekuk_explanation(gekuk_name_result)
-            except Exception as e:
-                st.warning(f"격국 분석 중 오류 발생: {e}")
-                gekuk_name_result = "분석 오류"
-        elif not analysis_possible:
-            # 이미 이전에 "사주 기둥 중 일부가 정확히 계산되지 않아..." 경고가 표시되었을 것임
-            pass # 추가 메시지 없이 넘어감
-        else: # analysis_possible은 True이나 ohaeng/sipshin 결과가 없는 경우
-            st.info("오행 및 십신 정보가 부족하여 신강/신약 및 격국 분석을 수행할 수 없습니다.")
-
-
-        col_shinkang, col_gekuk = st.columns(2) # 두 개의 컬럼으로 나눔
-
-        with col_shinkang:
-            # HTML/Markdown을 사용하여 카드 스타일 적용
-            st.markdown(f"""
-            <div style="background-color: #f9fafb; border: 1px solid #e5e7eb; border-radius: 0.5rem; padding: 1.25rem; height: 100%; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
-                <h4 style="font-size: 1.05em; font-weight: 600; color: #1f2937; margin-bottom: 0.6rem; border-bottom: 1px solid #e5e7eb; padding-bottom: 0.4rem;">일간 강약 (신강/신약)</h4>
-                <p style="font-size: 1.2em; font-weight: bold; color: #2563eb; margin-bottom: 0.75rem;">{shinkang_status_result}</p>
-                <p style="font-size: 0.9em; color: #4b5563; line-height: 1.6;">{shinkang_explanation_html}</p>
-            </div>
-            """, unsafe_allow_html=True)
-
-        with col_gekuk:
-            st.markdown(f"""
-            <div style="background-color: #f9fafb; border: 1px solid #e5e7eb; border-radius: 0.5rem; padding: 1.25rem; height: 100%; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
-                <h4 style="font-size: 1.05em; font-weight: 600; color: #1f2937; margin-bottom: 0.6rem; border-bottom: 1px solid #e5e7eb; padding-bottom: 0.4rem;">격국(格局) 분석</h4>
-                <p style="font-size: 1.2em; font-weight: bold; color: #059669; margin-bottom: 0.75rem;">{gekuk_name_result}</p>
-                <p style="font-size: 0.9em; color: #4b5563; line-height: 1.6;">{gekuk_explanation_html}</p>
-            </div>
-            """, unsafe_allow_html=True)
-        
-       
-#  기존 신강/신약 및 격국 분석 표시 부분 다음에 이어서 추가)
-
-        # ... (이전 격국 분석 st.markdown(...) 코드 다음 줄부터)
-
-        # --- 합충형해파(合沖刑害破) 분석 ---
-        st.markdown("---") # 구분선
-        st.subheader("🤝💥 합충형해파 분석") # 아이콘은 예시입니다.
-
-        # saju_8char_for_analysis 딕셔너리가 이미 상단에서 정의 및 사용 가능해야 합니다.
-        # (year_gan_char, year_ji_char 등이 포함된 딕셔너리)
-
-        if analysis_possible and 'day_gan_char' in locals() and day_gan_char : # day_gan_char 등 주요 변수가 있는지 한번 더 확인
-            try:
-                hap_chung_results_dict = analyze_hap_chung_interactions(saju_8char_for_analysis)
-                
-                has_any_hap_chung_interaction = any(v for v in hap_chung_results_dict.values())
-
-                if has_any_hap_chung_interaction:
-                    st.markdown("##### 발견된 주요 상호작용:")
-                    # 각 타입별로 결과 리스트를 Markdown으로 변환하여 표시
-                    # HTML/CSS를 사용하여 리스트 아이템 스타일링 (JS 예제 참고)
-                    output_html_parts = []
-                    for interaction_type, found_list in hap_chung_results_dict.items():
-                        if found_list:
-                            output_html_parts.append(f"<h6 style='color: #374151; margin-top: 0.6rem; margin-bottom: 0.2rem; font-size:0.95em;'>{interaction_type}</h6>")
-                            items_html = "".join([f"<li style='background-color: #eef2ff; color: #312e81; padding: 0.3rem 0.6rem; border-radius: 0.25rem; margin-bottom: 0.25rem; font-size: 0.9rem;'>{item}</li>" for item in found_list])
-                            output_html_parts.append(f"<ul style='list-style: none; padding-left: 0; margin-bottom: 0.5rem;'>{items_html}</ul>")
-                    
-                    if output_html_parts:
-                        st.markdown("".join(output_html_parts), unsafe_allow_html=True)
-                    else: # 모든 리스트가 비어있는 희귀한 경우 (has_any_hap_chung_interaction이 True인데 여기가 실행될 일은 거의 없음)
-                        st.markdown("<p style='font-size:0.95rem; color:#4b5563;'>특별히 기록할 만한 합충형해파 관계가 없습니다.</p>", unsafe_allow_html=True)
-
-                    # 전체 요약 설명
-                    hap_chung_explanation_html = get_hap_chung_detail_explanation(hap_chung_results_dict)
-                    st.markdown(f"<div style='font-size: 0.95rem; color: #4b5563; margin-top: 1rem; padding: 0.75rem; background-color: #f9fafb; border-radius: 4px; border-left: 3px solid #f59e0b;'>{hap_chung_explanation_html}</div>", unsafe_allow_html=True)
-                
-                else: # any() 에서 False가 나온 경우 (모든 결과 리스트가 비어있음)
-                    st.markdown("<p style='font-size:0.95rem; color:#4b5563;'>특별히 두드러지는 합충형해파의 관계가 나타나지 않습니다. 비교적 안정적인 구조일 수 있습니다.</p>", unsafe_allow_html=True)
-
-            except Exception as e:
-                st.warning(f"합충형해파 분석 중 오류 발생: {e}")
-                st.markdown("<p style='font-size:0.95rem; color:#b91c1c;'>합충형해파 분석 중 오류가 발생하여 결과를 표시할 수 없습니다.</p>", unsafe_allow_html=True)
-        
-        elif not analysis_possible:
-            # 이미 상단에서 "사주 기둥 중 일부가 정확히 계산되지 않아..." 경고가 표시되었을 것입니다.
-            # 여기서 추가적인 메시지는 생략합니다.
-            pass
-        else: # analysis_possible은 True인데, day_gan_char 같은 주요 변수가 없는 경우 (로직상 거의 발생 안함)
-            st.info("사주 정보가 부족하여 합충형해파 분석을 수행할 수 없습니다.")
-        
-# (saju_app.py 파일의 if st.sidebar.button(...) 블록 내부,
-#  기존 합충형해파 분석 표시 부분 다음에 이어서 추가)
-
-        # ... (이전 합충형해파 분석 st.markdown(...) 코드 다음 줄부터)
-
-        # --- 주요 신살(神煞) 분석 ---
-        st.markdown("---") # 구분선
-        st.subheader("🔮 주요 신살(神煞) 분석")
-
-        # saju_8char_for_analysis 딕셔너리가 이미 상단에서 정의 및 사용 가능해야 합니다.
-        
-        if analysis_possible and 'day_gan_char' in locals() and day_gan_char: # 주요 변수가 있는지 한번 더 확인
-            try:
-                found_shinsals_list = analyze_shinsal(saju_8char_for_analysis)
-                
-                if found_shinsals_list:
-                    st.markdown("##### 발견된 주요 신살:")
-                    # 각 항목을 리스트로 표시 (HTML 예제 shinsal-item 스타일 참고)
-                    items_html = "".join([f"<li style='background-color: #eef2ff; color: #312e81; padding: 0.4rem 0.75rem; border-radius: 0.25rem; margin-bottom: 0.3rem; font-size: 0.9rem; line-height: 1.5;'>{item}</li>" for item in found_shinsals_list])
-                    st.markdown(f"<ul style='list-style: none; padding-left: 0; margin-bottom: 0.5rem;'>{items_html}</ul>", unsafe_allow_html=True)
-                    
-                    # 전체 요약 설명
-                    shinsal_explanation_html = get_shinsal_detail_explanation(found_shinsals_list)
-                    st.markdown(f"<div style='font-size: 0.95rem; color: #4b5563; margin-top: 1rem; padding: 0.75rem; background-color: #f9fafb; border-radius: 4px; border-left: 3px solid #8b5cf6;'>{shinsal_explanation_html}</div>", unsafe_allow_html=True)
-                
-                else:
-                    st.markdown("<p style='font-size:0.95rem; color:#4b5563;'>특별히 나타나는 주요 신살이 없습니다.</p>", unsafe_allow_html=True)
-
-            except Exception as e:
-                st.warning(f"신살 분석 중 오류 발생: {e}")
-                st.markdown("<p style='font-size:0.95rem; color:#b91c1c;'>신살 분석 중 오류가 발생하여 결과를 표시할 수 없습니다.</p>", unsafe_allow_html=True)
-        
-        elif not analysis_possible:
-            # 이미 상단에서 "사주 기둥 중 일부가 정확히 계산되지 않아..." 경고가 표시되었을 것입니다.
-            pass 
-        else: 
-            st.info("사주 정보가 부족하여 신살 분석을 수행할 수 없습니다.")
-
-        # ... (이어서 기존의 대운, 세운 등 운세 정보 표시 부분 st.markdown("---") st.subheader(f"運 대운 ({gender})") ...)
-# (saju_app.py 파일의 if st.sidebar.button(...) 블록 내부,
-#  기존 신살 분석 표시 부분 다음에 이어서 추가)
-
-        # ... (이전 신살 분석 st.markdown(...) 코드 다음 줄부터)
-
-        # --- 용신(喜神) 및 기신(忌神) 분석 (간략) ---
-        st.markdown("---") # 구분선
-        st.subheader("☯️ 용신(喜神) 및 기신(忌神) 분석 (간략)")
-
-        # shinkang_status_result와 day_gan_char 변수가 이전 단계에서 계산되었어야 함
-        # analysis_possible 플래그도 유효해야 함
-        
-        if (analysis_possible and 
-            'shinkang_status_result' in locals() and 
-            shinkang_status_result not in ["분석 정보 없음", "분석 오류", "계산 불가"] and 
-            'day_gan_char' in locals() and day_gan_char):
-            try:
-                yongshin_gishin_info = determine_yongshin_gishin_simplified(
-                    day_gan_char, 
-                    shinkang_status_result
-                )
-                
-                # 용신/기신 판단 결과 HTML 표시
-                st.markdown(yongshin_gishin_info["html"], unsafe_allow_html=True)
-                
-                # 개운법 팁 HTML 표시
-                gaewoon_tips_html_content = get_gaewoon_tips_html(yongshin_gishin_info["yongshin"])
-                if gaewoon_tips_html_content:
-                    # HTML 예제의 gaewoon-tip 스타일 참고 (배경색, 왼쪽 테두리)
-                    st.markdown(f"""
-                    <div style='margin-top: 1rem; padding: 0.85rem 1rem; background-color: #e0f2fe; border-left: 4px solid #0284c7; border-radius: 4px; box-shadow: 0 1px 2px rgba(0,0,0,0.05);'>
-                        {gaewoon_tips_html_content}
-                    </div>
-                    """, unsafe_allow_html=True)
-                
-            except Exception as e:
-                st.warning(f"용신/기신 분석 중 오류 발생: {e}")
-                st.markdown("<p style='font-size:0.95rem; color:#b91c1c;'>용신/기신 분석 중 오류가 발생하여 결과를 표시할 수 없습니다.</p>", unsafe_allow_html=True)
-        
-        elif not analysis_possible:
-            # 이미 상단에서 "사주 기둥 중 일부가 정확히 계산되지 않아..." 등의 경고가 표시되었을 것입니다.
-            pass 
-        else: # 신강/신약 정보 등이 부족한 경우
-            st.info("일간의 강약(신강/신약) 정보가 명확하지 않아, 간략화된 용신/기신 분석을 수행하기 어렵습니다.")
-
-        # 주의사항 문구 (HTML 예제 notice 클래스 스타일 참고)
-        st.markdown("""
-        <div style="font-size: 0.85rem; color: #4b5563; margin-top: 1.5rem; padding: 0.85rem 1rem; background-color: #f9fafb; border: 1px dashed #d1d5db; border-radius: 4px;">
-            <strong style="color:#374151;">참고 사항:</strong><br>
-            여기서 제공되는 용신(喜神) 및 기신(忌神) 정보는 사주 당사자의 신강/신약을 기준으로 한 <strong>간략화된 억부용신(抑扶用神) 결과</strong>입니다. 
-            실제 정밀한 용신 판단은 사주 전체의 조후(調候 - 계절의 조화), 통관(通關 - 막힌 기운 소통), 병약(病藥 - 사주의 문제점과 해결책) 등 다양한 요소를 종합적으로 고려해야 하므로, 본 결과는 참고용으로만 활용하시고 중요한 판단은 반드시 사주 전문가와 상의하시기 바랍니다.
-        </div>
-        """, unsafe_allow_html=True)
-        
-        # ... (이어서 기존의 대운, 세운 등 운세 정보 표시 부분 st.markdown("---") st.subheader(f"運 대운 ({gender})") ...)
-        # --- 대운, 세운 등 기존 운세 정보 표시 (이전과 동일) ---
-        st.markdown("---") # 구분선
-        st.subheader(f"運 대운 ({gender})")
-        if "오류" in month_pillar_str or not month_gan_char or not month_ji_char :
-            st.warning("월주 계산에 오류가 있어 대운을 표시할 수 없습니다.")
-        else:
-            # is_sunhaeng_val 변수 이름을 명확히 하기 위해 수정 (만약 이전 코드와 다르다면)
-            daewoon_text_list, daewoon_start_age_val, is_sunhaeng_val = get_daewoon( 
-                year_gan_char, gender, birth_dt, month_gan_char, month_ji_char, solar_data
-            )
-            if isinstance(daewoon_text_list, list) and daewoon_text_list and "오류" in daewoon_text_list[0]: 
-                st.warning(daewoon_text_list[0])
-            elif isinstance(daewoon_text_list, list) and all(":" in item for item in daewoon_text_list):
-                st.text(f"대운 시작 나이: 약 {daewoon_start_age_val}세 ({'순행' if is_sunhaeng_val else '역행'})")
-                daewoon_table_data = {
-                    "주기(나이)": [item.split(':')[0] for item in daewoon_text_list], 
-                    "간지": [item.split(': ')[1] for item in daewoon_text_list]
-                }
-                st.table(pd.DataFrame(daewoon_table_data))
-            else: 
-                st.warning("대운 정보를 올바르게 가져오지 못했습니다.")
-
-        st.markdown("---") # 구분선
-        st.subheader(f"📅 기준일({ty}년 {tm}월 {td}일) 운세")
-        col1,col2 = st.columns(2)
-        with col1:
-            st.markdown(f"##### 歲 세운 ({ty}년~)")
-            st.table(pd.DataFrame(get_seun_list(ty,5), columns=["연도","간지"]))
-            st.markdown(f"##### 日 일운 ({ty}-{tm:02d}-{td:02d}~)")
-            st.table(pd.DataFrame(get_ilun_list(ty,tm,td,7), columns=["날짜","간지"]))
-        with col2:
-            st.markdown(f"##### 月 월운 ({ty}년 {tm:02d}월~)")
-            st.table(pd.DataFrame(get_wolun_list(ty,tm,solar_data,12), columns=["연월","간지"]))
-# (else: st.markdown(...) 부분은 기존과 동일하게 유지)
 # --- ➊ 화면 해설을 모아 지침 문자열을 만든다 ---
-         guideline_parts = []
+        guideline_parts = []
 
-# 1) 명식
+        # 1) 명식
+        # year_pillar_str 등은 이전에 정의되었다고 가정합니다.
+        if all(var in locals() for var in ['year_pillar_str', 'month_pillar_str', 'day_pillar_str', 'time_pillar_str']):
             guideline_parts.append(f"사주 명식 ▶ 연주 {year_pillar_str}, 월주 {month_pillar_str}, 일주 {day_pillar_str}, 시주 {time_pillar_str}")
+        else:
+            guideline_parts.append("사주 명식 ▶ 정보 부족")
 
-# 2) 신강/신약
-            plain_shinkang = get_shinkang_explanation(shinkang_status_result)
-            guideline_parts.append(f"일간 강약 ▶ {shinkang_status_result}: {plain_shinkang}")
+        # 2) 신강/신약
+        if 'shinkang_status_result' in locals() and shinkang_status_result not in ["분석 정보 없음", "분석 오류"]:
+            plain_shinkang = get_shinkang_explanation(shinkang_status_result) # 이 함수는 HTML이 아닌 순수 텍스트 반환 가정
+            guideline_parts.append(f"일간 강약 ▶ {shinkang_status_result}: {strip_html_tags(plain_shinkang)}")
+        else:
+            guideline_parts.append(f"일간 강약 ▶ {locals().get('shinkang_status_result', '정보 없음')}")
 
-# 3) 격국
-            plain_gekuk = get_gekuk_explanation(gekuk_name_result)
-            guideline_parts.append(f"격국 ▶ {gekuk_name_result}: {plain_gekuk}")
+        # 3) 격국
+        if 'gekuk_name_result' in locals() and gekuk_name_result not in ["분석 정보 없음", "분석 오류"]:
+            plain_gekuk = get_gekuk_explanation(gekuk_name_result) # 이 함수는 HTML이 아닌 순수 텍스트 반환 가정
+            guideline_parts.append(f"격국 ▶ {gekuk_name_result}: {strip_html_tags(plain_gekuk)}")
+        else:
+            guideline_parts.append(f"격국 ▶ {locals().get('gekuk_name_result', '정보 없음')}")
 
-# 4) 합충형해파
-          for kind, items in hap_chung_results_dict.items():
+        # 4) 합충형해파
+        if 'hap_chung_results_dict' in locals():
+            has_hap_chung = False
+            for kind, items in hap_chung_results_dict.items():
                 if items:
-                   guideline_parts.append(f"{kind} ▶ " + ", ".join(items))
+                    guideline_parts.append(f"{kind} ▶ " + ", ".join(items))
+                    has_hap_chung = True
+            if not has_hap_chung:
+                guideline_parts.append("합충형해파 ▶ 특별한 상호작용 없음")
+        else:
+            guideline_parts.append("합충형해파 ▶ 분석 정보 없음")
 
-# 5) 주요 신살
-                if found_shinsals_list:
-                   guideline_parts.append("주요 신살 ▶ " + ", ".join(found_shinsals_list))
-
-# 6) 용신/기신
-                   yongshin = yongshin_gishin_info.get("yongshin", [])
-                   gishin   = yongshin_gishin_info.get("gishin", [])
-                if yongshin or gishin:
-                   guideline_parts.append(f"용신 ▶ {', '.join(yongshin)}")
-                   guideline_parts.append(f"기신 ▶ {', '.join(gishin)}")
-
-# 최종 지침 문자열
-                   guideline_text = "\n\n".join(guideline_parts)
+        # 5) 주요 신살
+        if 'found_shinsals_list' in locals() and found_shinsals_list: # found_shinsals_list가 존재하고 비어있지 않은 경우
+            guideline_parts.append("주요 신살 ▶ " + ", ".join(found_shinsals_list))
+        elif 'found_shinsals_list' in locals(): # 존재하지만 비어있는 경우
+             guideline_parts.append("주요 신살 ▶ 특별히 나타나는 신살 없음")
+        else: # 변수 자체가 없는 경우
+            guideline_parts.append("주요 신살 ▶ 분석 정보 없음")
 
 
-# --- ➋ 복사용 UI 추가 ---
-                st.markdown("---")
-                st.subheader("📋 지침 복사")
+        # 6) 용신/기신
+        if 'yongshin_gishin_info' in locals():
+            yongshin = yongshin_gishin_info.get("yongshin", [])
+            gishin  = yongshin_gishin_info.get("gishin", [])
+            yongshin_str = ', '.join(yongshin) if yongshin else "정보 없음 또는 해당 없음"
+            gishin_str = ', '.join(gishin) if gishin else "정보 없음 또는 해당 없음"
+            guideline_parts.append(f"용신 ▶ {yongshin_str}")
+            guideline_parts.append(f"기신 ▶ {gishin_str}")
+        else:
+            guideline_parts.append("용신/기신 ▶ 분석 정보 없음")
 
-# 버튼을 누르면 아래에 text_area 로 전체 지침을 보여줍니다.
-                if st.button("지침 복사하기"):
-                   st.text_area("생성된 사주 상담 지침", guideline_text, height=300)
+        # 최종 지침 문자열
+        guideline_text = "\n\n".join(guideline_parts)
+
+        # --- ➋ 복사용 UI 추가 ---
+        st.markdown("---")
+        st.subheader("📋 생성된 사주 상담 지침")
+
+        # 버튼을 누르면 아래에 text_area 로 전체 지침을 보여줍니다.
+        # 이 버튼은 매번 계산 시마다 새로 생성되므로, 이전 상태를 기억할 필요는 없습니다.
+        # 다만, 버튼 클릭 후 text_area를 계속 보여줄지 여부는 다르게 처리할 수 있습니다.
+        # 여기서는 버튼 클릭 시 text_area를 표시하고, 다음 실행 전까지 유지됩니다.
+        if st.button("지침 내용 확인 및 복사하기"): # 버튼에 'key'를 추가하면 여러 버튼이 있을 때 구분 가능
+            st.text_area("아래 내용을 복사하여 사용하세요:", guideline_text, height=300, key="guideline_text_area_for_copy")
+        
+        # 모든 계산이 성공적으로 끝났음을 표시 (이 라인은 guideline 생성 후, if birth_dt_input_valid and birth_dt: 블록의 끝에 위치해야 함)
+        st.session_state.saju_calculated_once = True
+
+# (이 다음에는 if st.sidebar.button(...) 블록이 끝나고,
+# 메인 화면에 표시되는 "풀이 내용 지침으로 보기" expander 로직이 와야 합니다.)
+# 예를 들어:
+# if st.session_state.get('saju_calculated_once', False):
+# st.markdown("---")
+# if st.button("📋 전체 풀이 내용 다시 보기 (클릭하여 열기/닫기)", ...):
+# ... 등등
