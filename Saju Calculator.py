@@ -7,7 +7,7 @@ import pandas as pd
 from datetime import datetime, timedelta
 import os
 import math
-
+import re
 # --- 음력 변환을 위한 라이브러리 임포트 ---
 try:
     from lunardate import LunarDate
