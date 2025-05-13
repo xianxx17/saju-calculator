@@ -1252,9 +1252,15 @@ def get_ilun_list(year_val, month_val, day_val, n=10):
         output_ilun.append((current_dt.strftime("%Y-%m-%d"), ilun_ganji))
     return output_ilun
 
-# (이전 코드 ... 운세 정보 표시 및 st.session_state.interpretation_segments.append(...) 다음)
-# 예를 들어, 아래 라인 다음에 새 코드가 같은 들여쓰기 레벨로 시작되어야 합니다.
-# st.session_state.interpretation_segments.append((f"📅 기준일({ty}년 {tm}월 {td}일) 운세", "\n".join(unse_text_for_copy)))
+# (이전에 모든 함수 및 상수 정의, import 문들이 와야 합니다)
+# import streamlit as st
+# import pandas as pd
+# from datetime import datetime, timedelta
+# import os
+# import math
+# import re
+# from lunardate import LunarDate # 이미 try-except로 처리됨
+# from clipboard_component import copy_component # 클립보드 복사 기능을 위해 추가해야 할 import
 
 # ───────────────────────────────
 # 3. Streamlit UI
@@ -1266,9 +1272,9 @@ st.title("🔮 종합 사주 명식 및 운세 계산기")
 if 'saju_calculated_once' not in st.session_state:
     st.session_state.saju_calculated_once = False
 if 'interpretation_segments' not in st.session_state:
-    st.session_state.interpretation_segments = []
+    st.session_state.interpretation_segments = [] # "전체 풀이 내용 다시 보기" expander용
 if 'show_interpretation_guide_on_click' not in st.session_state:
-    st.session_state.show_interpretation_guide_on_click = False
+    st.session_state.show_interpretation_guide_on_click = False # expander 표시 여부
 
 
 st.sidebar.header("1. 출생 정보")
@@ -1295,18 +1301,21 @@ gender = st.sidebar.radio("성별", ("남성","여성"), horizontal=True, index=
 st.sidebar.header("2. 운세 기준일 (양력)")
 today = datetime.now()
 ty = st.sidebar.number_input("기준 연도 ", min_input_year, max_input_year + 10, today.year, help=f"양력 기준년도 ({min_input_year}~{max_input_year+10} 범위)")
-tm = st.sidebar.number_input("기준 월  ", 1, 12, today.month, key="target_month_for_unse_final") # 고유 키 사용
-td = st.sidebar.number_input("기준 일  ", 1, 31, today.day, key="target_day_for_unse_final")   # 고유 키 사용
+# 고유 키를 사용하여 Streamlit 위젯 ID 충돌 방지
+tm = st.sidebar.number_input("기준 월  ", 1, 12, today.month, key="ui_target_month")
+td = st.sidebar.number_input("기준 일  ", 1, 31, today.day, key="ui_target_day")
 
 # "계산 실행" 버튼 클릭 시 실행되는 로직
 if st.sidebar.button("🧮 계산 실행", use_container_width=True, type="primary"):
-    st.session_state.interpretation_segments = [] # 계산 시마다 초기화
-    st.session_state.saju_calculated_once = False # 계산 시작 시 초기화, 성공 시 True로 변경
-    st.session_state.show_interpretation_guide_on_click = False # 새 계산 시 지침은 닫힌 상태로 시작
+    # 세션 상태 초기화
+    st.session_state.interpretation_segments = []
+    st.session_state.saju_calculated_once = False
+    st.session_state.show_interpretation_guide_on_click = False
 
     birth_dt_input_valid = True
     birth_dt = None
 
+    # 날짜 변환 로직
     if calendar_type == "양력":
         try:
             birth_dt = datetime(by,bm,bd,bh,bmin)
@@ -1365,38 +1374,37 @@ if st.sidebar.button("🧮 계산 실행", use_container_width=True, type="prima
             if not val_char or len(val_char) != 1 or \
                (key.endswith("_gan") and val_char not in GAN) or \
                (key.endswith("_ji") and val_char not in JI):
-                analysis_possible = False; break
+                analysis_possible = False
+                break
         
         ohaeng_strengths, sipshin_strengths = {}, {}
+        shinkang_status_result, gekuk_name_result = "분석 정보 없음", "분석 정보 없음" # 기본값 초기화
+        shinkang_explanation_html, gekuk_explanation_html = "", "" # 기본값 초기화
+        hap_chung_results_dict, found_shinsals_list, yongshin_gishin_info = {}, [], {} # 기본값 초기화
+
         if analysis_possible:
             try:
                 ohaeng_strengths, sipshin_strengths = calculate_ohaeng_sipshin_strengths(saju_8char_for_analysis)
             except Exception as e:
                 st.warning(f"오행/십신 분석 중 오류 발생: {e}")
-                analysis_possible = False
+                analysis_possible = False # 후속 분석에 영향
         else:
             st.warning("사주 기둥 중 일부가 정확히 계산되지 않아 상세 분석을 수행할 수 없습니다.")
 
-        # --- 각 분석 결과 표시 및 interpretation_segments에 추가 ---
-        # (오행, 십신, 신강신약, 격국, 합충형해파, 신살, 용신/기신, 대운, 운세 등)
-        # 이 부분은 이전 답변들에서 이미 상세히 다루었으므로, 주요 구조만 남기고 생략합니다.
-        # 각 st.subheader(...) 다음에는 화면 표시 로직과 함께
-        # st.session_state.interpretation_segments.append((제목, strip_html_tags(내용) 또는 df.to_markdown()))
-        # 형태의 코드가 반복됩니다.
-
-        # 예시: 오행 분석
+        # --- 오행 분석 표시 ---
         st.markdown("---")
         st.subheader("🌳🔥 오행(五行) 분석")
         ohaeng_summary_exp_text_for_display = "오행 분석 정보 없음"
         ohaeng_analysis_text_for_segment = "오행 분석 정보 없음"
         ohaeng_table_data_for_segment = None
         if ohaeng_strengths and analysis_possible:
-            # ... (차트 표시 등) ...
+            ohaeng_df_for_chart = pd.DataFrame.from_dict(ohaeng_strengths, orient='index', columns=['세력']).reindex(OHENG_ORDER)
+            st.bar_chart(ohaeng_df_for_chart, height=300, use_container_width=True)
             ohaeng_summary_exp_text_for_display = get_ohaeng_summary_explanation(ohaeng_strengths)
-            st.markdown(f"<div style='...'>{ohaeng_summary_exp_text_for_display}</div>", unsafe_allow_html=True) # 스타일은 간략화
+            st.markdown(f"<div class='analysis-box ohaeng-box'>{ohaeng_summary_exp_text_for_display}</div>", unsafe_allow_html=True) # 스타일 클래스 사용 예시
             ohaeng_analysis_text_for_segment = strip_html_tags(ohaeng_summary_exp_text_for_display)
-            # ... (테이블 데이터 생성) ...
-            ohaeng_table_data_for_segment = pd.DataFrame({"오행": OHENG_ORDER, "세력": [ohaeng_strengths.get(o,0) for o in OHENG_ORDER]}).to_markdown(index=False)
+            ohaeng_table_data = {"오행": OHENG_ORDER, "세력": [ohaeng_strengths.get(o,0.0) for o in OHENG_ORDER]}
+            ohaeng_table_data_for_segment = pd.DataFrame(ohaeng_table_data).to_markdown(index=False)
         elif analysis_possible:
             st.markdown("오행 강약 정보를 계산 중이거나 표시할 데이터가 없습니다.")
         st.session_state.interpretation_segments.append(("🌳🔥 오행(五行) 분석", ohaeng_analysis_text_for_segment))
@@ -1404,17 +1412,187 @@ if st.sidebar.button("🧮 계산 실행", use_container_width=True, type="prima
             st.session_state.interpretation_segments.append(("오행 세력표", ohaeng_table_data_for_segment))
         else:
             st.session_state.interpretation_segments.append(("오행 세력표", "세력표 정보 없음"))
-        
-        # ... (다른 모든 분석 항목들도 유사한 방식으로 처리) ...
-        # 신강/신약, 격국, 합충형해파, 신살, 용신/기신, 대운, 세운 등
-        # 각 항목의 화면 표시 로직과 st.session_state.interpretation_segments.append() 로직이 여기에 위치합니다.
-        # (이전 답변들에서 이 부분들의 상세 코드는 이미 제공되었습니다.)
 
-        # 여기에 모든 분석 결과 표시와 interpretation_segments 추가가 끝났다고 가정합니다.
+        # --- 십신 분석 표시 ---
+        st.markdown("---")
+        st.subheader("🌟 십신(十神) 분석")
+        sipshin_summary_exp_text_for_display = "십신 분석 정보 없음"
+        sipshin_analysis_text_for_segment = "십신 분석 정보 없음"
+        sipshin_table_data_for_segment = None
+        if sipshin_strengths and analysis_possible:
+            sipshin_df_for_chart = pd.DataFrame.from_dict(sipshin_strengths, orient='index', columns=['세력']).reindex(SIPSHIN_ORDER)
+            st.bar_chart(sipshin_df_for_chart, height=400, use_container_width=True)
+            sipshin_summary_exp_text_for_display = get_sipshin_summary_explanation(sipshin_strengths, day_gan_char)
+            st.markdown(f"<div class='analysis-box sipshin-box'>{sipshin_summary_exp_text_for_display}</div>", unsafe_allow_html=True) # 스타일 클래스 사용 예시
+            sipshin_analysis_text_for_segment = strip_html_tags(sipshin_summary_exp_text_for_display)
+            sipshin_table_data = {"십신": SIPSHIN_ORDER, "세력": [sipshin_strengths.get(s,0.0) for s in SIPSHIN_ORDER]}
+            sipshin_table_data_for_segment = pd.DataFrame(sipshin_table_data).to_markdown(index=False)
+        elif analysis_possible:
+            st.markdown("십신 강약 정보를 계산 중이거나 표시할 데이터가 없습니다.")
+        st.session_state.interpretation_segments.append(("🌟 십신(十神) 분석", sipshin_analysis_text_for_segment))
+        if sipshin_table_data_for_segment:
+            st.session_state.interpretation_segments.append(("십신 세력표", sipshin_table_data_for_segment))
+        else:
+            st.session_state.interpretation_segments.append(("십신 세력표", "세력표 정보 없음"))
+
+        # --- 신강/신약 및 격국 분석 ---
+        st.markdown("---")
+        st.subheader("💪 일간 강약 및 격국(格局) 분석")
+        if analysis_possible and ohaeng_strengths and sipshin_strengths:
+            try:
+                shinkang_status_result = determine_shinkang_shinyak(sipshin_strengths)
+                shinkang_explanation_html = get_shinkang_explanation(shinkang_status_result)
+                gekuk_name_result = determine_gekuk(day_gan_char, month_gan_char, month_ji_char, sipshin_strengths)
+                gekuk_explanation_html = get_gekuk_explanation(gekuk_name_result)
+            except Exception as e:
+                st.warning(f"신강/신약 또는 격국 분석 중 오류 발생: {e}")
+                shinkang_status_result, gekuk_name_result = "분석 오류", "분석 오류"
+        col_shinkang, col_gekuk = st.columns(2)
+        with col_shinkang:
+            st.markdown(f"""<div class='analysis-card'><h4 class='card-title'>일간 강약 (신강/신약)</h4><p class='card-result shinkang-result'>{shinkang_status_result}</p><p class='card-text'>{shinkang_explanation_html}</p></div>""", unsafe_allow_html=True)
+        with col_gekuk:
+            st.markdown(f"""<div class='analysis-card'><h4 class='card-title'>격국(格局) 분석</h4><p class='card-result gekuk-result'>{gekuk_name_result}</p><p class='card-text'>{gekuk_explanation_html}</p></div>""", unsafe_allow_html=True)
+        st.session_state.interpretation_segments.append(("💪 일간 강약", f"**{shinkang_status_result}**\n{strip_html_tags(shinkang_explanation_html)}"))
+        st.session_state.interpretation_segments.append(("💪 격국(格局) 분석", f"**{gekuk_name_result}**\n{strip_html_tags(gekuk_explanation_html)}"))
+
+        # --- 합충형해파 분석 ---
+        st.markdown("---")
+        st.subheader("🤝💥 합충형해파 분석")
+        hap_chung_text_for_segment_parts = []
+        if analysis_possible and 'day_gan_char' in locals() and day_gan_char:
+            try:
+                hap_chung_results_dict = analyze_hap_chung_interactions(saju_8char_for_analysis)
+                if any(v for v in hap_chung_results_dict.values()):
+                    st.markdown("##### 발견된 주요 상호작용:")
+                    output_html_parts = []
+                    for interaction_type, found_list in hap_chung_results_dict.items():
+                        if found_list:
+                            output_html_parts.append(f"<h6 class='interaction-title'>{interaction_type}</h6>")
+                            items_html = "".join([f"<li class='interaction-item'>{item}</li>" for item in found_list])
+                            output_html_parts.append(f"<ul class='interaction-list'>{items_html}</ul>")
+                            hap_chung_text_for_segment_parts.append(f"**{interaction_type}**\n" + "\n".join([f"- {item}" for item in found_list]))
+                    if output_html_parts: st.markdown("".join(output_html_parts), unsafe_allow_html=True)
+                    
+                    hap_chung_explanation_html_val = get_hap_chung_detail_explanation(hap_chung_results_dict)
+                    st.markdown(f"<div class='analysis-box hapchung-explanation-box'>{hap_chung_explanation_html_val}</div>", unsafe_allow_html=True)
+                    hap_chung_text_for_segment_parts.append(f"\n**설명:**\n{strip_html_tags(hap_chung_explanation_html_val)}")
+                else:
+                    msg = "특별히 두드러지는 합충형해파의 관계가 나타나지 않습니다. 비교적 안정적인 구조일 수 있습니다."
+                    st.markdown(f"<p class='info-text'>{msg}</p>", unsafe_allow_html=True)
+                    hap_chung_text_for_segment_parts.append(msg)
+            except Exception as e:
+                st.warning(f"합충형해파 분석 중 오류 발생: {e}")
+                hap_chung_text_for_segment_parts.append("합충형해파 분석 중 오류 발생")
+        else:
+            hap_chung_text_for_segment_parts.append("사주 정보가 부족하여 합충형해파 분석을 수행할 수 없습니다.")
+        st.session_state.interpretation_segments.append(("🤝💥 합충형해파 분석", "\n\n".join(hap_chung_text_for_segment_parts)))
+        
+        # --- 주요 신살 분석 ---
+        st.markdown("---")
+        st.subheader("🔮 주요 신살(神煞) 분석")
+        shinsal_text_for_segment_parts = []
+        if analysis_possible and 'day_gan_char' in locals() and day_gan_char:
+            try:
+                found_shinsals_list = analyze_shinsal(saju_8char_for_analysis)
+                if found_shinsals_list:
+                    st.markdown("##### 발견된 주요 신살:")
+                    items_html = "".join([f"<li class='shinsal-item'>{item}</li>" for item in found_shinsals_list])
+                    st.markdown(f"<ul class='shinsal-list'>{items_html}</ul>", unsafe_allow_html=True)
+                    shinsal_explanation_html_val = get_shinsal_detail_explanation(found_shinsals_list)
+                    st.markdown(f"<div class='analysis-box shinsal-explanation-box'>{shinsal_explanation_html_val}</div>", unsafe_allow_html=True)
+                    shinsal_text_for_segment_parts.append("**발견된 주요 신살:**\n" + "\n".join([f"- {item}" for item in found_shinsals_list]))
+                    shinsal_text_for_segment_parts.append(f"\n**설명:**\n{strip_html_tags(shinsal_explanation_html_val)}")
+                else:
+                    msg = "특별히 나타나는 주요 신살이 없습니다."
+                    st.markdown(f"<p class='info-text'>{msg}</p>", unsafe_allow_html=True)
+                    shinsal_text_for_segment_parts.append(msg)
+            except Exception as e:
+                st.warning(f"신살 분석 중 오류 발생: {e}")
+                shinsal_text_for_segment_parts.append("신살 분석 중 오류 발생")
+        else:
+            shinsal_text_for_segment_parts.append("사주 정보가 부족하여 신살 분석을 수행할 수 없습니다.")
+        st.session_state.interpretation_segments.append(("🔮 주요 신살(神煞) 분석", "\n\n".join(shinsal_text_for_segment_parts)))
+
+        # --- 용신/기신 분석 ---
+        st.markdown("---")
+        st.subheader("☯️ 용신(喜神) 및 기신(忌神) 분석 (간략)")
+        yongshin_text_for_segment = "용신/기신 분석 정보 없음"
+        gaewoon_text_for_segment = ""
+        yongshin_notice_text_for_segment = strip_html_tags("""<div><strong>참고 사항:</strong><br> 여기서 제공되는 용신(喜神) 및 기신(忌神) 정보는 ... (내용 생략) ... 중요한 판단은 반드시 사주 전문가와 상의하시기 바랍니다.</div>""") # 원본 참고사항 텍스트
+
+        if (analysis_possible and
+            'shinkang_status_result' in locals() and shinkang_status_result not in ["분석 정보 없음", "분석 오류", "계산 불가"] and
+            'day_gan_char' in locals() and day_gan_char):
+            try:
+                yongshin_gishin_info = determine_yongshin_gishin_simplified(day_gan_char, shinkang_status_result)
+                st.markdown(yongshin_gishin_info["html"], unsafe_allow_html=True)
+                gaewoon_tips_html_content = get_gaewoon_tips_html(yongshin_gishin_info["yongshin"])
+                if gaewoon_tips_html_content:
+                    st.markdown(f"<div class='gaewoon-box'>{gaewoon_tips_html_content}</div>", unsafe_allow_html=True)
+                yongshin_text_for_segment = strip_html_tags(yongshin_gishin_info.get("html", "분석 정보 없음"))
+                if yongshin_gishin_info.get("yongshin"):
+                    gaewoon_text_for_segment = strip_html_tags(gaewoon_tips_html_content)
+            except Exception as e:
+                st.warning(f"용신/기신 분석 중 오류 발생: {e}")
+        elif not analysis_possible:
+            pass # 이미 상단에서 경고
+        else:
+            st.info("일간의 강약 정보가 명확하지 않아 용신/기신 분석을 수행하기 어렵습니다.")
+        
+        st.markdown("""<div class="notice-box"><strong style="color:#374151;">참고 사항:</strong><br> 여기서 제공되는 용신(喜神) 및 기신(忌神) 정보는 사주 당사자의 신강/신약을 기준으로 한 <strong>간략화된 억부용신(抑扶用神) 결과</strong>입니다. 실제 정밀한 용신 판단은 사주 전체의 조후(調候 - 계절의 조화), 통관(通關 - 막힌 기운 소통), 병약(病藥 - 사주의 문제점과 해결책) 등 다양한 요소를 종합적으로 고려해야 하므로, 본 결과는 참고용으로만 활용하시고 중요한 판단은 반드시 사주 전문가와 상의하시기 바랍니다.</div>""", unsafe_allow_html=True)
+        st.session_state.interpretation_segments.append(("☯️ 용신(喜神) 및 기신(忌神) 분석 (간략)", yongshin_text_for_segment + ("\n\n" + gaewoon_text_for_segment if gaewoon_text_for_segment else "")))
+        st.session_state.interpretation_segments.append(("용신/기신 참고사항", yongshin_notice_text_for_segment))
+
+        # --- 대운, 세운 등 ---
+        st.markdown("---")
+        st.subheader(f"運 대운 ({gender})")
+        daewoon_text_for_segment_parts = []
+        if "오류" in month_pillar_str or not month_gan_char or not month_ji_char :
+            msg = "월주 계산에 오류가 있어 대운을 표시할 수 없습니다."
+            st.warning(msg)
+            daewoon_text_for_segment_parts.append(msg)
+        else:
+            daewoon_text_list, daewoon_start_age_val, is_sunhaeng_val = get_daewoon(year_gan_char, gender, birth_dt, month_gan_char, month_ji_char, solar_data)
+            if isinstance(daewoon_text_list, list) and daewoon_text_list and "오류" in daewoon_text_list[0]:
+                st.warning(daewoon_text_list[0])
+                daewoon_text_for_segment_parts.append(daewoon_text_list[0])
+            elif isinstance(daewoon_text_list, list) and all(":" in item for item in daewoon_text_list):
+                daewoon_start_info = f"대운 시작 나이: 약 {daewoon_start_age_val}세 ({'순행' if is_sunhaeng_val else '역행'})"
+                st.text(daewoon_start_info)
+                daewoon_table_data = {"주기(나이)": [item.split(':')[0] for item in daewoon_text_list], "간지": [item.split(': ')[1] for item in daewoon_text_list]}
+                daewoon_df = pd.DataFrame(daewoon_table_data)
+                st.table(daewoon_df)
+                daewoon_text_for_segment_parts.append(daewoon_start_info)
+                daewoon_text_for_segment_parts.append(daewoon_df.to_markdown(index=False))
+            else:
+                msg = "대운 정보를 올바르게 가져오지 못했습니다."
+                st.warning(msg)
+                daewoon_text_for_segment_parts.append(msg)
+        st.session_state.interpretation_segments.append((f"運 대운 ({gender})", "\n".join(daewoon_text_for_segment_parts)))
+
+        st.markdown("---")
+        st.subheader(f"📅 기준일({ty}년 {tm}월 {td}일) 운세")
+        unse_text_for_segment_parts = []
+        col_unse1, col_unse2 = st.columns(2)
+        with col_unse1:
+            st.markdown(f"##### 歲 세운 ({ty}년~)")
+            seun_df = pd.DataFrame(get_seun_list(ty,5), columns=["연도","간지"])
+            st.table(seun_df)
+            unse_text_for_segment_parts.append(f"**歲 세운 ({ty}년~)**\n{seun_df.to_markdown(index=False)}")
+            st.markdown(f"##### 日 일운 ({ty}-{tm:02d}-{td:02d}~)")
+            ilun_df = pd.DataFrame(get_ilun_list(ty,tm,td,7), columns=["날짜","간지"])
+            st.table(ilun_df)
+            unse_text_for_segment_parts.append(f"\n**日 일운 ({ty}-{tm:02d}-{td:02d}~)**\n{ilun_df.to_markdown(index=False)}")
+        with col_unse2:
+            st.markdown(f"##### 月 월운 ({ty}년 {tm:02d}월~)")
+            wolun_df = pd.DataFrame(get_wolun_list(ty,tm,solar_data,12), columns=["연월","간지"])
+            st.table(wolun_df)
+            unse_text_for_segment_parts.append(f"\n**月 월운 ({ty}년 {tm:02d}월~)**\n{wolun_df.to_markdown(index=False)}")
+        st.session_state.interpretation_segments.append((f"📅 기준일({ty}년 {tm}월 {td}일) 운세", "\n".join(unse_text_for_segment_parts)))
 
         # --- ➊ 화면 해설을 모아 클립보드 복사용 지침 문자열을 만든다 ---
-        # 이 블록은 위의 모든 분석 결과 변수들(예: year_pillar_str, shinkang_status_result 등)이
-        # 정의된 후에 실행되어야 하며, 현재 들여쓰기 레벨을 유지해야 합니다.
+        # 이 블록은 위의 모든 분석 결과 변수들이 정의된 후에 실행되어야 하며,
+        # 현재 들여쓰기 레벨(if birth_dt_input_valid and birth_dt: 블록 내부)을 유지합니다.
         guideline_parts = []
 
         # 1) 명식
@@ -1436,29 +1614,28 @@ if st.sidebar.button("🧮 계산 실행", use_container_width=True, type="prima
             guideline_parts.append(f"격국 ▶ {locals().get('gekuk_name_result', '정보 없음')}")
         
         # 4) 합충형해파
-        # 'hap_chung_results_dict' 변수가 이전에 정의 및 할당되었다고 가정
         if 'hap_chung_results_dict' in locals() and hap_chung_results_dict:
             has_hap_chung_interaction_for_guideline = False
             for kind, items in hap_chung_results_dict.items():
                 if items:
                     guideline_parts.append(f"{kind} ▶ " + ", ".join(items))
                     has_hap_chung_interaction_for_guideline = True
-            if not has_hap_chung_interaction_for_guideline:
+            if not has_hap_chung_interaction_for_guideline and any(hap_chung_results_dict.values()): # 결과는 있으나 아이템이 없는 경우 (거의 없음)
+                 guideline_parts.append("합충형해파 ▶ 상세 내용 확인 필요")
+            elif not any(hap_chung_results_dict.values()): # 결과 자체가 없는 경우
                  guideline_parts.append("합충형해파 ▶ 특별한 상호작용 없음")
         else:
             guideline_parts.append("합충형해파 ▶ 분석 정보 없음")
 
         # 5) 주요 신살
-        # 'found_shinsals_list' 변수가 이전에 정의 및 할당되었다고 가정
         if 'found_shinsals_list' in locals() and found_shinsals_list:
             guideline_parts.append("주요 신살 ▶ " + ", ".join(found_shinsals_list))
-        elif 'found_shinsals_list' in locals(): # 변수는 있으나 리스트가 빈 경우
+        elif 'found_shinsals_list' in locals():
              guideline_parts.append("주요 신살 ▶ 특별히 나타나는 신살 없음")
         else:
             guideline_parts.append("주요 신살 ▶ 분석 정보 없음")
 
         # 6) 용신/기신
-        # 'yongshin_gishin_info' 변수가 이전에 정의 및 할당되었다고 가정
         if 'yongshin_gishin_info' in locals() and yongshin_gishin_info:
             yongshin = yongshin_gishin_info.get("yongshin", [])
             gishin  = yongshin_gishin_info.get("gishin", [])
@@ -1471,26 +1648,20 @@ if st.sidebar.button("🧮 계산 실행", use_container_width=True, type="prima
 
         guideline_text = "\n\n".join(guideline_parts)
 
-        # (이전 코드 ... guideline_text = "\n\n".join(guideline_parts) 다음 ...)
+        # --- ➋ 복사용 UI 추가 (클립보드 직접 복사 - clipboard_component 사용) ---
+        st.markdown("---")
+        st.subheader("📋 사주 상담 지침 (아래 버튼 클릭 시 클립보드에 복사)")
+        
+        if 'guideline_text' in locals() and isinstance(guideline_text, str) and guideline_text.strip():
+            # clipboard_component의 copy_component 사용
+            copy_component("📋 상담 지침 클립보드에 복사하기", content=guideline_text, key="clipboard_guideline_copy_component")
+        elif 'guideline_text' in locals() and isinstance(guideline_text, str) and not guideline_text.strip():
+            st.warning("복사할 지침 내용이 없습니다 (내용이 비어 있음).")
+        else: 
+            st.error("지침 내용(guideline_text)이 생성되지 않아 복사할 수 없습니다.")
 
-            # --- ➋ 복사용 UI 추가 (클립보드 직접 복사 - 수정된 방식) ---
-            st.markdown("---")
-            st.subheader("📋 사주 상담 지침 (아래 버튼 클릭 시 클립보드에 복사)")
-
-            if 'guideline_text' in locals() and isinstance(guideline_text, str) and guideline_text.strip():
-                # copy_component 사용법: 첫 번째 인자는 버튼에 표시될 텍스트, content 인자에 복사할 내용 전달
-                copy_component("📋 상담 지침 클립보드에 복사하기", content=guideline_text, key="clipboard_guideline_actual_working")
-                # 참고: 이 컴포넌트의 성공/실패 메시지 방식은 st_copy_to_clipboard와 다를 수 있습니다.
-                # 별도의 성공 메시지 매개변수가 없을 수 있으며, 버튼 클릭 시 바로 복사만 수행할 수 있습니다.
-                # 작동 후 st.success 등으로 직접 피드백을 주는 것을 고려해볼 수 있으나, 
-                # 컴포넌트가 클릭 후 즉시 페이지를 재실행할 수 있어 타이밍 문제가 있을 수 있습니다.
-            elif 'guideline_text' in locals() and isinstance(guideline_text, str) and not guideline_text.strip():
-                st.warning("복사할 지침 내용이 없습니다 (내용이 비어 있음).")
-            else: 
-                st.error("지침 내용(guideline_text)이 생성되지 않아 복사할 수 없습니다.")
-
-            # 모든 계산 및 UI 생성이 성공적으로 끝났음을 표시
-            st.session_state.saju_calculated_once = True
+        # 모든 계산 및 UI 생성이 성공적으로 끝났음을 표시
+        st.session_state.saju_calculated_once = True
     # --- "if birth_dt_input_valid and birth_dt:" 블록의 끝 ---
 # --- "if st.sidebar.button(...)" 블록의 끝 ---
 
@@ -1498,26 +1669,26 @@ if st.sidebar.button("🧮 계산 실행", use_container_width=True, type="prima
 # --- "풀이 내용 지침으로 보기" 버튼 및 결과 표시 (expander) ---
 # 이 섹션은 if st.sidebar.button(...) 블록 바깥, 메인 페이지 영역에 위치하며, 들여쓰기 0칸에서 시작합니다.
 if st.session_state.get('saju_calculated_once', False):
-    st.markdown("---") # 들여쓰기 4칸
+    st.markdown("---") # 4칸 들여쓰기
 
-    if st.button("📖 전체 풀이 내용 다시 보기 (클릭하여 열기/닫기)", use_container_width=True, key="toggle_interpretation_guide_expander_button_final"): # 들여쓰기 4칸
-        st.session_state.show_interpretation_guide_on_click = not st.session_state.get('show_interpretation_guide_on_click', False) # 들여쓰기 8칸
+    if st.button("📖 전체 풀이 내용 다시 보기 (클릭하여 열기/닫기)", use_container_width=True, key="toggle_interpretation_guide_expander_button_final_v2"): # 4칸 들여쓰기
+        st.session_state.show_interpretation_guide_on_click = not st.session_state.get('show_interpretation_guide_on_click', False) # 8칸 들여쓰기
 
-    if st.session_state.get('show_interpretation_guide_on_click', False): # 들여쓰기 4칸
-        with st.expander("📖 전체 풀이 내용 (텍스트 지침)", expanded=True): # 들여쓰기 8칸
-            if st.session_state.get('interpretation_segments') and len(st.session_state.interpretation_segments) > 0: # 들여쓰기 12칸
-                current_time_str = datetime.now().strftime('%Y-%m-%d %H:%M:%S') # 들여쓰기 16칸
-                full_text_guide = f"# ✨ 종합 사주 풀이 결과 ({current_time_str})\n\n" # 들여쓰기 16칸
+    if st.session_state.get('show_interpretation_guide_on_click', False): # 4칸 들여쓰기
+        with st.expander("📖 전체 풀이 내용 (텍스트 지침)", expanded=True): # 8칸 들여쓰기
+            if st.session_state.get('interpretation_segments') and len(st.session_state.interpretation_segments) > 0: # 12칸 들여쓰기
+                current_time_str = datetime.now().strftime('%Y-%m-%d %H:%M:%S') # 16칸 들여쓰기
+                full_text_guide = f"# ✨ 종합 사주 풀이 결과 ({current_time_str})\n\n" # 16칸 들여쓰기
 
-                for title, content in st.session_state.interpretation_segments: # 들여쓰기 16칸
-                    content_to_display = content if content and isinstance(content, str) else "내용 없음" # 들여쓰기 20칸
-                    full_text_guide += f"## {title}\n\n{content_to_display.strip()}\n\n---\n\n" # 들여쓰기 20칸
+                for title, content in st.session_state.interpretation_segments: # 16칸 들여쓰기
+                    content_to_display = content if content and isinstance(content, str) else "내용 없음" # 20칸 들여쓰기
+                    full_text_guide += f"## {title}\n\n{content_to_display.strip()}\n\n---\n\n" # 20칸 들여쓰기
 
-                st.markdown(full_text_guide) # 들여쓰기 16칸
-                st.info("위 내용을 선택하여 복사한 후, 원하시는 곳에 붙여넣어 활용하세요.") # 들여쓰기 16칸
-            else: # 들여쓰기 12칸
-                st.markdown("표시할 풀이 내용이 없습니다. '계산 실행' 버튼을 눌러 사주 분석을 먼저 진행해주세요.") # 들여쓰기 16칸
+                st.markdown(full_text_guide) # 16칸 들여쓰기
+                st.info("위 내용을 선택하여 복사한 후, 원하시는 곳에 붙여넣어 활용하세요.") # 16칸 들여쓰기
+            else: # 12칸 들여쓰기
+                st.markdown("표시할 풀이 내용이 없습니다. '계산 실행' 버튼을 눌러 사주 분석을 먼저 진행해주세요.") # 16칸 들여쓰기
 
 # 앱 하단에 표시될 수 있는 초기 안내 (만약 계산된 내용이 없다면)
-if not st.session_state.get('saju_calculated_once', False): # 들여쓰기 0칸
-    st.info("화면 왼쪽의 사이드바에서 출생 정보를 입력하고 '🧮 계산 실행' 버튼을 누르면, 사주 명식과 함께 상세 풀이 내용을 이곳에서 확인할 수 있습니다.") # 들여쓰기 4칸
+if not st.session_state.get('saju_calculated_once', False): # 0칸 들여쓰기
+    st.info("화면 왼쪽의 사이드바에서 출생 정보를 입력하고 '🧮 계산 실행' 버튼을 누르면, 사주 명식과 함께 상세 풀이 내용을 이곳에서 확인할 수 있습니다.") # 4칸 들여쓰기
