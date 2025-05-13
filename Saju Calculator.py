@@ -8,6 +8,8 @@ from datetime import datetime, timedelta
 import os
 import math
 import re
+from streamlit_clipboard import st_copy_to_clipboard
+
 # --- 음력 변환을 위한 라이브러리 임포트 ---
 try:
     from lunardate import LunarDate
@@ -1697,12 +1699,14 @@ if st.sidebar.button("🧮 계산 실행", use_container_width=True, type="prima
         # --- ➋ 복사용 UI 추가 ---
         # 이 블록도 위의 guideline_parts = [] 와 동일한 들여쓰기 수준입니다.
         st.markdown("---")
-        st.subheader("📋 생성된 사주 상담 지침")
+        st.subheader("📋 사주 상담 지침 (아래 버튼 클릭 시 클립보드에 복사)")
 
         # 버튼을 누르면 아래에 text_area 로 전체 지침을 보여줍니다.
-        if st.button("지침 내용 확인 및 복사하기", key="copy_guideline_button_unique"): # 고유한 key 추가
-            st.text_area("아래 내용을 복사하여 사용하세요:", guideline_text, height=300, key="guideline_text_area_for_copy_unique")
-        
+        st_copy_to_clipboard(guideline_text, 
+                             label="상담 지침 클립보드에 복사하기", 
+                             success_message="✅ 지침 내용이 클립보드에 복사되었습니다!", 
+                             key="clipboard_guideline_button")
+
         # 모든 계산 및 UI 생성이 성공적으로 끝났음을 표시
         st.session_state.saju_calculated_once = True
     # 여기에 "if birth_dt_input_valid and birth_dt:" 블록의 끝이 옵니다.
