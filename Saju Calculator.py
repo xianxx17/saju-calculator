@@ -1457,7 +1457,6 @@ if st.sidebar.button("🧮 계산 실행", use_container_width=True, type="prima
         month_pillar_str, month_gan_char, month_ji_char = get_month_ganji(year_gan_char, birth_dt, solar_data)
         day_pillar_str, day_gan_char, day_ji_char = get_day_ganji(birth_dt.year, birth_dt.month, birth_dt.day)
         time_pillar_str, time_gan_char, time_ji_char = get_time_ganji(day_gan_char, birth_dt.hour, birth_dt.minute)
-birth_dt.minute)
 
         # ==================================================================
         # ▼▼▼▼▼▼▼▼▼▼▼▼▼ 생년월일 및 현재 나이 표시 코드 (여기에 삽입) ▼▼▼▼▼▼▼▼▼▼▼▼▼
