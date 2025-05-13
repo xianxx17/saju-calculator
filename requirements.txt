@@ -4,4 +4,4 @@ korean_lunar_calendar
 openpyxl
 lunardate
 tabulate
-streamlit-clipboard
+streamlit-clipboard==0.1.1
