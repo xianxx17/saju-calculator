@@ -1121,6 +1121,15 @@ solar_data = load_solar_terms(FILE_NAME)
 if solar_data is None: 
     st.stop()
 
+# (다른 import 문들 아래 또는 함수 정의 구역에 추가)
+def calculate_age(birth_dt_obj, current_dt_obj):
+    """만 나이를 계산합니다."""
+    if birth_dt_obj is None:
+        return "계산 불가"
+    age = current_dt_obj.year - birth_dt_obj.year
+    if (current_dt_obj.month, current_dt_obj.day) < (birth_dt_obj.month, birth_dt_obj.day):
+        age -= 1
+    return age
 # ───────────────────────────────
 # 2. 사주/운세 계산 함수 (get_day_ganji는 이전 JD기반 사용, 나머지는 동일)
 # ───────────────────────────────
@@ -1441,6 +1450,36 @@ if st.sidebar.button("🧮 계산 실행", use_container_width=True, type="prima
         month_pillar_str, month_gan_char, month_ji_char = get_month_ganji(year_gan_char, birth_dt, solar_data)
         day_pillar_str, day_gan_char, day_ji_char = get_day_ganji(birth_dt.year, birth_dt.month, birth_dt.day)
         time_pillar_str, time_gan_char, time_ji_char = get_time_ganji(day_gan_char, birth_dt.hour, birth_dt.minute)
+birth_dt.minute)
+
+        # ==================================================================
+        # ▼▼▼▼▼▼▼▼▼▼▼▼▼ 생년월일 및 현재 나이 표시 코드 (여기에 삽입) ▼▼▼▼▼▼▼▼▼▼▼▼▼
+        # ==================================================================
+        st.subheader("👤 기본 정보")
+
+        # 입력된 생년월일시 정보 (사이드바에서 가져온 값 사용)
+        birth_info_display_text = f"{calendar_type} {by}년 {bm}월 {bd}일"
+        if calendar_type == "음력" and is_leap_month:
+            birth_info_display_text += " (윤달)"
+        birth_info_display_text += f" {bh:02d}시 {bmin:02d}분 출생"
+        
+        st.markdown(f"**입력 생년월일시:** {birth_info_display_text}")
+
+        if calendar_type == "음력":
+            # birth_dt는 이미 양력으로 변환된 datetime 객체입니다.
+            st.markdown(f"**양력 환산 생일:** {birth_dt.strftime('%Y년 %m월 %d일')}")
+
+        # 현재 만 나이 계산 및 표시
+        today_date = datetime.now() # 현재 날짜 및 시간
+        # calculate_age 함수는 스크립트 상단에 미리 정의되어 있어야 합니다.
+        # birth_dt (양력 datetime 객체)와 today_date를 전달
+        age_calculated = calculate_age(birth_dt, today_date) 
+        st.markdown(f"**현재 만 나이:** {age_calculated}세 (기준일: {today_date.strftime('%Y년 %m월 %d일')})")
+        
+        st.markdown("---") # 다음 섹션과의 구분을 위한 선
+        # ==================================================================
+        # ▲▲▲▲▲▲▲▲▲▲▲▲▲▲ 생년월일 및 현재 나이 표시 코드 끝 ▲▲▲▲▲▲▲▲▲▲▲▲▲
+        # ==================================================================
 
         # --- 명식 기본 정보 표시 ---
         st.subheader("📜 사주 명식")
