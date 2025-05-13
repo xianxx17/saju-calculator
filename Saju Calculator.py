@@ -1253,33 +1253,96 @@ def get_time_ganji(day_gan_char, hour, minute):
     return GAN[time_gan_idx] + siji_char, GAN[time_gan_idx], siji_char
 
 def get_daewoon(year_gan_char, gender, birth_dt, month_gan_char, month_ji_char, solar_data_dict):
-    # 오류 발생 가능 지점들에서 항상 3개 값을 반환하도록 처리
+    # 입력된 birth_dt (생일)는 datetime 객체여야 합니다.
     if not isinstance(birth_dt, datetime):
-        return ["오류(잘못된 생년월일 객체)"], 0, False 
-    
+        return ["오류(잘못된 생년월일 객체)"], 0, False
+
+    # 1. 순행/역행 결정
     try:
-        is_yang_year = GAN.index(year_gan_char) % 2 == 0
-    except (ValueError, TypeError):
-        return [f"오류(잘못된 연간: {year_gan_char})"], 0, False # 예시: 연간 문제 시 3개 반환
+        gan_index = GAN.index(year_gan_char) # 연간이 GAN 리스트에 있는지 확인
+    except ValueError:
+        return [f"오류(알 수 없는 연간: {year_gan_char})"], 0, False # is_sunhaeng 기본값 False
+    
+    is_yang_year = gan_index % 2 == 0
     is_sunhaeng = (is_yang_year and gender == "남성") or (not is_yang_year and gender == "여성")
 
-    # ... (relevant_terms_for_daewoon 계산) ...
-    if not relevant_terms_for_daewoon:
-        return ["오류(대운 계산용 절기 부족)"], 0, is_sunhaeng
+    # 2. 생일(birth_dt) 전후의 절기 찾기
+    # ▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼ 이 변수가 사용되기 전에 반드시 초기화되어야 합니다 ▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼
+    relevant_terms_for_daewoon = []  # <--- 이 라인이 중요합니다!
+    # ▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲ 변수 초기화 ▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲
+
+    if solar_data_dict is None: # solar_data_dict가 None이면 .get() 호출 시 오류 발생 방지
+        return ["오류(절기 데이터 누락)"], 0, is_sunhaeng
+
+    for yr_offset in [-1, 0, 1]: 
+        year_to_check_in_solar_terms = birth_dt.year + yr_offset
+        year_terms = solar_data_dict.get(year_to_check_in_solar_terms, {}) # 기본값으로 빈 dict 반환
+        if year_terms is None: # 혹시 모를 경우 대비 (get의 기본값이 {}이므로 보통은 필요 없음)
+            year_terms = {}
+            
+        for term_name, term_dt_obj in year_terms.items():
+            if term_name in SAJU_MONTH_TERMS_ORDER: 
+                relevant_terms_for_daewoon.append({'name': term_name, 'datetime': term_dt_obj})
     
-    # ... (target_term_dt 계산) ...
+    relevant_terms_for_daewoon.sort(key=lambda x: x['datetime'])
+
+    # ▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼ 사용자님 오류 발생 지점 (line 1267 근처) ▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼
+    if not relevant_terms_for_daewoon: 
+        return ["오류(대운 계산용 절기 부족)"], 0, is_sunhaeng 
+    # ▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲ 여기까지 ▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲
+    
+    target_term_dt = None
+    if is_sunhaeng: 
+        for term_info in relevant_terms_for_daewoon:
+            if term_info['datetime'] > birth_dt:
+                target_term_dt = term_info['datetime']
+                break
+    else: 
+        for term_info in reversed(relevant_terms_for_daewoon):
+            if term_info['datetime'] < birth_dt:
+                target_term_dt = term_info['datetime']
+                break
+    
     if target_term_dt is None:
         return ["오류(대운 목표 절기 탐색 실패)"], 0, is_sunhaeng
+
+    if is_sunhaeng:
+        days_difference = (target_term_dt - birth_dt).total_seconds() / (24 * 3600.0)
+    else: 
+        days_difference = (birth_dt - target_term_dt).total_seconds() / (24 * 3600.0)
     
-    # ... (daewoon_start_age 계산) ...
-    
-    # ... (current_month_gapja_idx 계산) ...
-    if current_month_gapja_idx == -1:
-        return ["오류(월주를 60갑자로 변환 실패)"], daewoon_start_age, is_sunhaeng # daewoon_start_age가 정의된 후
-    
-    # ... (daewoon_list_output 계산) ...
-    return daewoon_list_output, daewoon_start_age, is_sunhaeng # 최종 정상 반환
+    daewoon_start_age = max(1, int(round(days_difference / 3.0)))
+
+    if month_gan_char is None or month_ji_char is None: # 월주 간지 누락 시 오류 처리
+        return ["오류(월주 정보 누락)"], daewoon_start_age, is_sunhaeng
         
+    month_ganji_str = month_gan_char + month_ji_char
+    current_month_gapja_idx = -1
+    for idx in range(60): 
+        if get_ganji_from_index(idx) == month_ganji_str:
+            current_month_gapja_idx = idx
+            break
+    if current_month_gapja_idx == -1:
+        return ["오류(월주를 60갑자로 변환 실패)"], daewoon_start_age, is_sunhaeng
+
+    daewoon_list_output = []
+    birth_year_solar = birth_dt.year 
+
+    for i_period in range(10): 
+        current_daewoon_man_age = daewoon_start_age + (i_period * 10)
+        current_daewoon_start_solar_year = birth_year_solar + current_daewoon_man_age
+        
+        gapja_offset = i_period + 1 
+        next_gapja_idx = -1
+        if is_sunhaeng:
+            next_gapja_idx = (current_month_gapja_idx + gapja_offset) % 60 
+        else: 
+            next_gapja_idx = (current_month_gapja_idx - gapja_offset + 6000) % 60 
+        
+        daewoon_ganji_str = get_ganji_from_index(next_gapja_idx)
+        daewoon_list_output.append(f"만 {current_daewoon_man_age}세 ({current_daewoon_start_solar_year}년~): {daewoon_ganji_str}")
+        
+    return daewoon_list_output, daewoon_start_age, is_sunhaeng        
 def get_seun_list(start_year, n=10): 
     return [(y, get_year_ganji(y)[0]) for y in range(start_year, start_year+n)]
 
