@@ -1696,19 +1696,26 @@ if st.sidebar.button("🧮 계산 실행", use_container_width=True, type="prima
         guideline_text = "\n\n".join(guideline_parts)
 
 
-        # --- ➋ 복사용 UI 추가 ---
-        # 이 블록도 위의 guideline_parts = [] 와 동일한 들여쓰기 수준입니다.
-        st.markdown("---")
-        st.subheader("📋 사주 상담 지침 (아래 버튼 클릭 시 클립보드에 복사)")
+# (기존 코드 ... guideline_text = "\n\n".join(guideline_parts) 다음 ...)
 
-        # 버튼을 누르면 아래에 text_area 로 전체 지침을 보여줍니다.
-        st_copy_to_clipboard(guideline_text, 
-                             label="상담 지침 클립보드에 복사하기", 
-                             success_message="✅ 지침 내용이 클립보드에 복사되었습니다!", 
-                             key="clipboard_guideline_button")
+            # --- ➋ 복사용 UI 추가 (클립보드 직접 복사) ---
+            st.markdown("---")
+            st.subheader("📋 사주 상담 지침 (아래 버튼 클릭 시 클립보드에 복사)")
+            
+            # guideline_text 변수에 저장된 내용을 클립보드에 복사하는 버튼 생성
+            # 매개변수 이름을 before_copy_label 과 after_copy_label 로 변경해봅니다.
+            if 'guideline_text' in locals() and isinstance(guideline_text, str) and guideline_text.strip(): # guideline_text가 비어있지 않은지 확인
+                st_copy_to_clipboard(guideline_text, 
+                                     before_copy_label="📋 상담 지침 클립보드에 복사하기", 
+                                     after_copy_label="✅ 복사 완료! (클립보드를 확인하세요)", 
+                                     key="clipboard_guideline_button")
+            elif 'guideline_text' in locals() and isinstance(guideline_text, str) and not guideline_text.strip():
+                st.warning("복사할 지침 내용이 없습니다 (내용이 비어 있음).")
+            else: # guideline_text 자체가 정의되지 않은 경우 (이전 단계에서 문제가 있었을 수 있음)
+                st.error("지침 내용(guideline_text)이 생성되지 않아 복사할 수 없습니다.")
 
-        # 모든 계산 및 UI 생성이 성공적으로 끝났음을 표시
-        st.session_state.saju_calculated_once = True
+            # 모든 계산 및 UI 생성이 성공적으로 끝났음을 표시
+            st.session_state.saju_calculated_once = True
     # 여기에 "if birth_dt_input_valid and birth_dt:" 블록의 끝이 옵니다.
 
 # --- "풀이 내용 지침으로 보기" 버튼 및 결과 표시 (expander) ---
