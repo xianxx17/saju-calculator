@@ -1253,48 +1253,32 @@ def get_time_ganji(day_gan_char, hour, minute):
     return GAN[time_gan_idx] + siji_char, GAN[time_gan_idx], siji_char
 
 def get_daewoon(year_gan_char, gender, birth_dt, month_gan_char, month_ji_char, solar_data_dict):
-    # 입력된 birth_dt (생일)는 datetime 객체여야 합니다.
+    # 오류 발생 가능 지점들에서 항상 3개 값을 반환하도록 처리
     if not isinstance(birth_dt, datetime):
-        return ["오류(잘못된 생년월일 객체)"], 0, False # 또는 True, 기본값
-
-    # 1. 순행/역행 결정
-    is_yang_year = GAN.index(year_gan_char) % 2 == 0
+        return ["오류(잘못된 생년월일 객체)"], 0, False 
+    
+    try:
+        is_yang_year = GAN.index(year_gan_char) % 2 == 0
+    except (ValueError, TypeError):
+        return [f"오류(잘못된 연간: {year_gan_char})"], 0, False # 예시: 연간 문제 시 3개 반환
     is_sunhaeng = (is_yang_year and gender == "남성") or (not is_yang_year and gender == "여성")
 
-    # 2. 생일(birth_dt) 전후의 절기 찾기
-    relevant_terms_for_daewoon = []
-    # solar_data_dict의 키는 양력 연도입니다. birth_dt의 양력 연도를 기준으로 탐색합니다.
-    for yr_offset in [-1, 0, 1]: # 생일의 양력년도 기준 -1년, 당해년도, +1년의 절기 데이터 탐색
-        year_to_check_in_solar_terms = birth_dt.year + yr_offset
-        year_terms = solar_data_dict.get(year_to_check_in_solar_terms, {})
-        for term_name, term_dt_obj in year_terms.items():
-            if term_name in SAJU_MONTH_TERMS_ORDER: # SAJU_MONTH_TERMS_ORDER는 12 주요 절기 리스트
-                relevant_terms_for_daewoon.append({'name': term_name, 'datetime': term_dt_obj})
-    
-    relevant_terms_for_daewoon.sort(key=lambda x: x['datetime']) # 시간순 정렬
-
+    # ... (relevant_terms_for_daewoon 계산) ...
     if not relevant_terms_for_daewoon:
         return ["오류(대운 계산용 절기 부족)"], 0, is_sunhaeng
-
-    # 3. 대운수 계산을 위한 목표 절기(target_term_dt) 찾기
-    target_term_dt = None
-    if is_sunhaeng: # 순행: 생일 이후 첫 번째 절기
-        for term_info in relevant_terms_for_daewoon:
-            if term_info['datetime'] > birth_dt:
-                target_term_dt = term_info['datetime']
-                break
-    else: # 역행: 생일 이전 마지막 절기
-        for term_info in reversed(relevant_terms_for_daewoon):
-            if term_info['datetime'] < birth_dt:
-                target_term_dt = term_info['datetime']
-                break
     
+    # ... (target_term_dt 계산) ...
     if target_term_dt is None:
-        # 이 조건문 다음에는 반드시 들여쓰기 된 코드가 와야 합니다.
-        # 예를 들어, 오류 메시지와 함께 기본값을 반환합니다.
-        return ["오류(대운 목표 절기 탐색 실패)"], 0, is_sunhaeng # <--- 이와 같이 들여쓰기 된 return 문을 추가하세요.
-    # ▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲ 여기까지 수정 ▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲
-
+        return ["오류(대운 목표 절기 탐색 실패)"], 0, is_sunhaeng
+    
+    # ... (daewoon_start_age 계산) ...
+    
+    # ... (current_month_gapja_idx 계산) ...
+    if current_month_gapja_idx == -1:
+        return ["오류(월주를 60갑자로 변환 실패)"], daewoon_start_age, is_sunhaeng # daewoon_start_age가 정의된 후
+    
+    # ... (daewoon_list_output 계산) ...
+    return daewoon_list_output, daewoon_start_age, is_sunhaeng # 최종 정상 반환
         
 def get_seun_list(start_year, n=10): 
     return [(y, get_year_ganji(y)[0]) for y in range(start_year, start_year+n)]
