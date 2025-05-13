@@ -1762,7 +1762,7 @@ if st.sidebar.button("🧮 계산 실행", use_container_width=True, type="prima
 
         # 3. 현재 만 나이
         #    age_calculated와 today_for_age 변수는 "기본 정보" UI를 위해 이미 계산되었습니다.
-        guideline_parts.append(f"현재 만 나이 ▶ {age_calculated}세 (기준일: {today_for_age.strftime('%Y년 %m월 %d일')})")
+        guideline_parts.append(f"현재 만 나이 ▶ {age_calculated}세 (기준일: {today_date.strftime('%Y년 %m월 %d일')})")
         
         # (선택사항) 기본 정보와 사주 명식 사이에 구분자를 추가할 수 있습니다.
         # guideline_parts.append("---") 
