@@ -1654,7 +1654,7 @@ if st.sidebar.button("🧮 계산 실행", use_container_width=True, type="prima
         
         if 'guideline_text' in locals() and isinstance(guideline_text, str) and guideline_text.strip():
             # clipboard_component의 copy_component 사용
-            copy_component("📋 상담 지침 클립보드에 복사하기", content=guideline_text, key="clipboard_guideline_copy_component")
+            copy_component("📋 상담 지침 클립보드에 복사하기", content=guideline_text, component_key="clipboard_guideline_copy_component")
         elif 'guideline_text' in locals() and isinstance(guideline_text, str) and not guideline_text.strip():
             st.warning("복사할 지침 내용이 없습니다 (내용이 비어 있음).")
         else: 
