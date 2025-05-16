@@ -1847,28 +1847,18 @@ if st.sidebar.button("🧮 계산 실행", use_container_width=True, type="prima
 
 
 
-        # ▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼ [ 여기에 아래 디버깅 코드만 넣어주세요 ] ▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼
+        # ▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼ [ 여기에 아래 6줄의 디버깅 코드만 넣어주세요 ] ▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼
         st.markdown("---") # 화면에 구분선을 그립니다.
-        st.subheader("🐞 코드 디버깅 중 (상태 확인) 🐞") # 디버깅 섹션 제목
-        st.caption("이 메시지들은 오행/십신 정보를 복사 내용에 넣기 직전의 중요 변수 값입니다.")
+        st.info("🐞 디버깅: 오행/십신 정보 추가 직전 변수 상태 👇") # 디버깅 섹션 안내
 
-        # 1. 'analysis_possible' 변수가 True인지 False인지 확인합니다.
-        debug_analysis_possible = locals().get('analysis_possible', "⚠️ 'analysis_possible' 변수 없음")
-        st.info(f"➡️ 분석 가능 상태 (analysis_possible): {debug_analysis_possible}")
-
-        # 2. 'ohaeng_strengths' 변수에 오행별 세력 값이 잘 들어있는지 확인합니다.
-        debug_ohaeng_strengths = locals().get('ohaeng_strengths', "⚠️ 'ohaeng_strengths' 변수 없음")
-        st.text(f"➡️ 오행 세력 (ohaeng_strengths): {debug_ohaeng_strengths}")
-
-        # 3. 'sipshin_strengths' 변수에 십신별 세력 값이 잘 들어있는지 확인합니다.
-        debug_sipshin_strengths = locals().get('sipshin_strengths', "⚠️ 'sipshin_strengths' 변수 없음")
-        st.text(f"➡️ 십신 세력 (sipshin_strengths): {debug_sipshin_strengths}")
-
-        # 4. 'day_gan_char' (일간) 변수가 무엇인지 확인합니다. (십신 계산에 중요)
-        debug_day_gan_char = locals().get('day_gan_char', "⚠️ 'day_gan_char' 변수 없음")
-        st.text(f"➡️ 일간 글자 (day_gan_char): '{debug_day_gan_char}'")
+        st.write(f"1. 분석 가능 여부 (analysis_possible): {locals().get('analysis_possible', '⚠️ 변수 없음')}")
+        st.write(f"2. 오행 세력 (ohaeng_strengths): {locals().get('ohaeng_strengths', '⚠️ 변수 없음')}")
+        st.write(f"3. 십신 세력 (sipshin_strengths): {locals().get('sipshin_strengths', '⚠️ 변수 없음')}")
+        st.write(f"4. 일간 글자 (day_gan_char): '{locals().get('day_gan_char', '⚠️ 변수 없음')}'")
         st.markdown("---") # 화면에 구분선을 그립니다.
-        # ▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲ [ 여기까지가 추가할 디버깅 코드입니다 ] ▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲        
+        # ▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲ [ 여기까지가 추가할 디버깅 코드입니다 ] ▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲
+
+        
         if 'hap_chung_results_dict' in locals() and hap_chung_results_dict:
             has_interaction = False
             for kind, items in hap_chung_results_dict.items():
