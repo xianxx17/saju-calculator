@@ -1901,8 +1901,8 @@ if st.sidebar.button("🧮 계산 실행", use_container_width=True, type="prima
 
         # --- [클립보드 복사 내용] 사주 명식 (+12운성) 정보 추가 ---# 
            
-            st.divider()
-            st.subheader("🔍 변수 존재 여부 확인 (사주 명식 클립보드용)")
+        st.divider()
+        st.subheader("🔍 변수 존재 여부 확인 (사주 명식 클립보드용)")
 
             vars_to_check_for_guideline = [
                 'year_pillar_str', 'month_pillar_str', 'day_pillar_str', 'time_pillar_str',
