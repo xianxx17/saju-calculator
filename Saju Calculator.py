@@ -1894,62 +1894,65 @@ if st.sidebar.button("🧮 계산 실행", use_container_width=True, type="prima
         # ▲▲▲▲▲▲▲▲▲▲▲▲▲▲ "guideline_parts"에 기본 정보 추가 끝 ▲▲▲▲▲▲▲▲▲▲▲▲▲
         # ------------------------------------------------------------------
 
-        if 'year_pillar_str' in locals(): # 명식 정보가 있다면 추가
-             guideline_parts.append(f"사주 명식 ▶ 연주 {year_pillar_str}, 월주 {month_pillar_str}, 일주 {day_pillar_str}, 시주 {time_pillar_str}")
-        else:
-            guideline_parts.append("사주 명식 ▶ 정보 부족")
+        # (이전 guideline_parts.append(...) 코드들이 이 위에 있을 수 있습니다.
+        # 예를 들어, 격국 정보를 추가한 다음 줄이 될 수 있습니다.)
 
-        # --- [클립보드 복사 내용] 사주 명식 (+12운성) 정보 추가 ---# 
-           
-        st.divider()
+        # --- [시작] 클립보드 복사 내용: 사주 명식 (+12운성) 정보 추가 ---
+        # 이 코드는 guideline_parts 리스트에 사주 명식 정보를 추가합니다.
+        # 필수 변수들이 이전에 모두 올바르게 계산되었다고 가정합니다.
+
+        # ▼▼▼▼▼▼▼▼▼▼▼▼ [ 디버깅 코드: 변수 존재 및 값 확인 ] ▼▼▼▼▼▼▼▼▼▼▼▼
+        # 이 부분의 들여쓰기가 매우 중요합니다. guideline_parts.append(...)와 같은 수준이어야 합니다.
+        st.divider() 
         st.subheader("🔍 변수 존재 여부 확인 (사주 명식 클립보드용)")
 
-            vars_to_check_for_guideline = [
-                'year_pillar_str', 'month_pillar_str', 'day_pillar_str', 'time_pillar_str',
-                'year_unseong', 'month_unseong', 'day_unseong', 'time_unseong'
-            ]
-            all_found_debug = True
-            for var_name_to_check in vars_to_check_for_guideline:
-                if var_name_to_check in locals():
-                    st.success(f"✅ '{var_name_to_check}' 변수 존재함, 값: {locals()[var_name_to_check]}")
-                else:
-                    st.error(f"❌ '{var_name_to_check}' 변수 없음 (locals()에 존재하지 않음)")
-                    all_found_debug = False
-            # ... (이하 디버깅 코드) ...
-            st.divider()
-            # ▲▲▲▲▲▲▲▲▲▲▲▲ [ 여기까지 디버깅 코드 ] ▲▲▲▲▲▲▲▲▲▲▲▲
-        myeongshik_vars_defined = all(
-            var_name in locals() for var_name in [
-                'year_pillar_str', 'month_pillar_str', 'day_pillar_str', 'time_pillar_str',
-                'year_unseong', 'month_unseong', 'day_unseong', 'time_unseong'
-            ]
+        myeongshik_clipboard_required_vars_debug = [
+            'year_pillar_str', 'month_pillar_str', 'day_pillar_str', 'time_pillar_str',
+            'year_unseong', 'month_unseong', 'day_unseong', 'time_unseong',
+            'saju_year_val' 
+        ]
+        all_myeongshik_vars_available_debug = True
+        for var_name_debug_check in myeongshik_clipboard_required_vars_debug:
+            if var_name_debug_check in locals():
+                st.success(f"✅ (클립보드 명식 디버그) '{var_name_debug_check}' 존재, 값: {locals()[var_name_debug_check]}")
+            else:
+                st.error(f"❌ (클립보드 명식 디버그) '{var_name_debug_check}' 없음!!!")
+                all_myeongshik_vars_available_debug = False
+
+        if all_myeongshik_vars_available_debug:
+            st.info("👍 (클립보드 명식 디버그) 모든 필수 변수가 존재합니다.")
+        else:
+            st.warning("⚠️ (클립보드 명식 디버그) 일부 필수 변수가 없습니다. 위 목록 확인!")
+        st.divider()
+        # ▲▲▲▲▲▲▲▲▲▲▲▲ [ 여기까지 디버깅 코드 ] ▲▲▲▲▲▲▲▲▲▲▲▲
+
+        # 실제 로직 시작
+        myeongshik_vars_defined_for_clipboard = all(
+            var_name in locals() for var_name in myeongshik_clipboard_required_vars_debug 
         )
 
-        if myeongshik_vars_defined:
-            # 각 기둥별로 표시될 문자열을 안전하게 생성합니다.
-            # pillar_str 자체에 "오류"가 포함될 수 있고, unseong_val은 "?", "계산불가" 등을 가질 수 있습니다.
-            
-            year_display_text = f"{year_pillar_str if '오류' not in year_pillar_str else '오류'} ({year_unseong if year_unseong not in ['계산불가', '입력오류', '?'] and '오류' not in year_pillar_str else '?'})"
-            month_display_text = f"{month_pillar_str if '오류' not in month_pillar_str else '오류'} ({month_unseong if month_unseong not in ['계산불가', '입력오류', '?'] and '오류' not in month_pillar_str else '?'})"
-            day_display_text = f"{day_pillar_str if '오류' not in day_pillar_str else '오류'} ({day_unseong if day_unseong not in ['계산불가', '입력오류', '?'] and '오류' not in day_pillar_str else '?'})"
-            time_display_text = f"{time_pillar_str if '오류' not in time_pillar_str else '오류'} ({time_unseong if time_unseong not in ['계산불가', '입력오류', '?'] and '오류' not in time_pillar_str else '?'})"
+        if myeongshik_vars_defined_for_clipboard:
+            year_display_text_cb = f"{year_pillar_str if '오류' not in year_pillar_str else '오류'} ({str(year_unseong) if str(year_unseong) not in ['계산불가', '입력오류', '?'] and '오류' not in year_pillar_str else '?'})"
+            month_display_text_cb = f"{month_pillar_str if '오류' not in month_pillar_str else '오류'} ({str(month_unseong) if str(month_unseong) not in ['계산불가', '입력오류', '?'] and '오류' not in month_pillar_str else '?'})"
+            day_display_text_cb = f"{day_pillar_str if '오류' not in day_pillar_str else '오류'} ({str(day_unseong) if str(day_unseong) not in ['계산불가', '입력오류', '?'] and '오류' not in day_pillar_str else '?'})"
+            time_display_text_cb = f"{time_pillar_str if '오류' not in time_pillar_str else '오류'} ({str(time_unseong) if str(time_unseong) not in ['계산불가', '입력오류', '?'] and '오류' not in time_pillar_str else '?'})"
 
             saju_myeongshik_detail_for_guideline = (
-                f"연주: {year_display_text}, "
-                f"월주: {month_display_text}, "
-                f"일주: {day_display_text}, "
-                f"시주: {time_display_text}"
+                f"연주: {year_display_text_cb}, "
+                f"월주: {month_display_text_cb}, "
+                f"일주: {day_display_text_cb}, "
+                f"시주: {time_display_text_cb}"
             )
             guideline_parts.append(f"사주 명식 (+12운성) ▶ {saju_myeongshik_detail_for_guideline}")
-            
-            # 사주 기준 연도 정보도 클립보드에 추가 (이전에 논의되었던 부분)
-            if 'saju_year_val' in locals():
-                 guideline_parts.append(f"사주 기준 연도 (입춘 기준) ▶ {saju_year_val}년")
-
+            guideline_parts.append(f"사주 기준 연도 (입춘 기준) ▶ {saju_year_val}년")
         else:
-            # 필요한 변수 중 하나라도 정의되지 않은 경우
-            guideline_parts.append("사주 명식 (+12운성) ▶ 기본 정보 부족으로 표시 불가 (코드 확인 필요)")
-        # --- [클립보드 복사 내용] 사주 명식 (+12운성) 정보 추가 끝 ---
+            missing_vars_list_for_clipboard_msg = [
+                var_name for var_name in myeongshik_clipboard_required_vars_debug if var_name not in locals()
+            ]
+            if not missing_vars_list_for_clipboard_msg:
+                 missing_vars_list_for_clipboard_msg.append("알 수 없는 이유 (변수는 존재하나 조건 불충족)")
+            guideline_parts.append(f"사주 명식 (+12운성) ▶ 기본 정보 부족 (다음 변수 확인: {', '.join(missing_vars_list_for_clipboard_msg)})")
+        # --- [끝] 클립보드 복사 내용: 사주 명식 (+12운성) 정보 추가 ---
         
         if 'shinkang_status_result' in locals() and 'shinkang_explanation_html' in locals():
             guideline_parts.append(f"일간 강약 ▶ {shinkang_status_result}: {strip_html_tags(shinkang_explanation_html)}")
