@@ -2002,20 +2002,15 @@ if st.sidebar.button("🧮 계산 실행", use_container_width=True, type="prima
 
         # 4. 최종 조건에 따라 guideline_parts에 정보 추가
         if final_condition_met_for_clipboard:
-            year_display_text_cb = f"{year_pillar_str if '오류' not in year_pillar_str else '오류'} ({str(year_unseong) if str(year_unseong) not in ['계산불가', '입력오류', '?'] and '오류' not in year_pillar_str else '?'})"
-            month_display_text_cb = f"{month_pillar_str if '오류' not in month_pillar_str else '오류'} ({str(month_unseong) if str(month_unseong) not in ['계산불가', '입력오류', '?'] and '오류' not in month_pillar_str else '?'})"
-            day_display_text_cb = f"{day_pillar_str if '오류' not in day_pillar_str else '오류'} ({str(day_unseong) if str(day_unseong) not in ['계산불가', '입력오류', '?'] and '오류' not in day_pillar_str else '?'})"
-            time_display_text_cb = f"{time_pillar_str if '오류' not in time_pillar_str else '오류'} ({str(time_unseong) if str(time_unseong) not in ['계산불가', '입력오류', '?'] and '오류' not in time_pillar_str else '?'})"
+                # ... (saju_myeongshik_detail_for_guideline 생성) ...
+                guideline_parts.append(f"사주 명식 (+12운성 궁위포태) ▶ {saju_myeongshik_detail_for_guideline}")
+                # saju_year_val 변수는 이 코드 블록 이전에 이미 계산되어 있어야 합니다.
+                if 'saju_year_val' in locals() and saju_year_val is not None:
+                    guideline_parts.append(f"사주 기준 연도 (입춘 기준) ▶ {saju_year_val}년")
+                else:
+                    guideline_parts.append(f"사주 기준 연도 (입춘 기준) ▶ 정보 없음 (saju_year_val 누락 또는 None)")
 
-            saju_myeongshik_detail_for_guideline = (
-                f"연주: {year_display_text_cb}, "
-                f"월주: {month_display_text_cb}, "
-                f"일주: {day_display_text_cb}, "
-                f"시주: {time_display_text_cb}"
-            )
-            guideline_parts.append(f"사주 명식 (+12운성 궁위포태) ▶ {saju_myeongshik_detail_for_guideline}")
-            guideline_parts.append(f"사주 기준 연도 (입춘 기준) ▶ {saju_year_val}년")
-
+        
         # ▼▼▼▼▼▼▼▼▼▼▼▼ [ 여기에 아래 일간포태 클립보드 추가 코드 ] ▼▼▼▼▼▼▼▼▼▼▼▼
         # --- 클립보드 복사 내용에 일간 기준 12운성 (일간포태) 추가 ---
         current_day_gan_for_guideline = locals().get('day_gan_char') # 안전하게 변수 가져오기
