@@ -1939,7 +1939,7 @@ if st.sidebar.button("🧮 계산 실행", use_container_width=True, type="prima
                 f"일주: {day_display_text_cb}, "
                 f"시주: {time_display_text_cb}"
             )
-            guideline_parts.append(f"사주 명식 (+12운성) ▶ {saju_myeongshik_detail_for_guideline}")
+            guideline_parts.append(f"사주 명식 (+12운성 궁위포태) ▶ {saju_myeongshik_detail_for_guideline}")
             guideline_parts.append(f"사주 기준 연도 (입춘 기준) ▶ {saju_year_val}년")
         else:
             # 이 부분은 정상 작동 시 실행되지 않아야 합니다.
