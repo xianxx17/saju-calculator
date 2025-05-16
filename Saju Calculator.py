@@ -1929,7 +1929,7 @@ if st.sidebar.button("🧮 계산 실행", use_container_width=True, type="prima
 
             # ▼▼▼▼▼▼▼▼▼▼▼▼ [ 이 아래 코드로 교체해주세요 ] ▼▼▼▼▼▼▼▼▼▼▼▼
             # 1. 확인할 변수 이름 리스트 (이전에 화면 디버깅에서 사용했던 것과 동일한 목록)
-            myeongshik_clipboard_required_vars_for_all_check = [
+        myeongshik_clipboard_required_vars_for_all_check = [
                 'year_pillar_str', 'month_pillar_str', 'day_pillar_str', 'time_pillar_str',
                 'year_unseong', 'month_unseong', 'day_unseong', 'time_unseong',
                 'saju_year_val'
