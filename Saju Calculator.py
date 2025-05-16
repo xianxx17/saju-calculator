@@ -1898,23 +1898,47 @@ if st.sidebar.button("🧮 계산 실행", use_container_width=True, type="prima
              guideline_parts.append(f"사주 명식 ▶ 연주 {year_pillar_str}, 월주 {month_pillar_str}, 일주 {day_pillar_str}, 시주 {time_pillar_str}")
         else:
             guideline_parts.append("사주 명식 ▶ 정보 부족")
-# ... (saju_year_caption 추가 로직 바로 전 또는 후) ...
 
-        if 'year_pillar_str' in locals(): # 명식 정보가 있다면 추가
-            # 간지 및 12운성 함께 표시 (오류 처리 포함)
-            def get_pillar_display(pillar_str, unseong_val):
-                return f"{pillar_str if '오류' not in pillar_str else '오류'} ({unseong_val if unseong_val not in ['계산불가', '입력오류', '?'] and '오류' not in pillar_str else '?'})"
+        # --- [클립보드 복사 내용] 사주 명식 (+12운성) 정보 추가 ---
+        # 이 코드는 guideline_parts 리스트에 사주 명식 정보를 추가합니다.
+        # 이전에 year_pillar_str, month_pillar_str, day_pillar_str, time_pillar_str 변수와
+        # year_unseong, month_unseong, day_unseong, time_unseong 변수들이
+        # 모두 올바르게 계산되어 있다고 가정합니다.
+
+        # 필수 변수들이 모두 존재하는지 확인 (더욱 안전한 코드 실행을 위해)
+        myeongshik_vars_defined = all(
+            var_name in locals() for var_name in [
+                'year_pillar_str', 'month_pillar_str', 'day_pillar_str', 'time_pillar_str',
+                'year_unseong', 'month_unseong', 'day_unseong', 'time_unseong'
+            ]
+        )
+
+        if myeongshik_vars_defined:
+            # 각 기둥별로 표시될 문자열을 안전하게 생성합니다.
+            # pillar_str 자체에 "오류"가 포함될 수 있고, unseong_val은 "?", "계산불가" 등을 가질 수 있습니다.
+            
+            year_display_text = f"{year_pillar_str if '오류' not in year_pillar_str else '오류'} ({year_unseong if year_unseong not in ['계산불가', '입력오류', '?'] and '오류' not in year_pillar_str else '?'})"
+            month_display_text = f"{month_pillar_str if '오류' not in month_pillar_str else '오류'} ({month_unseong if month_unseong not in ['계산불가', '입력오류', '?'] and '오류' not in month_pillar_str else '?'})"
+            day_display_text = f"{day_pillar_str if '오류' not in day_pillar_str else '오류'} ({day_unseong if day_unseong not in ['계산불가', '입력오류', '?'] and '오류' not in day_pillar_str else '?'})"
+            time_display_text = f"{time_pillar_str if '오류' not in time_pillar_str else '오류'} ({time_unseong if time_unseong not in ['계산불가', '입력오류', '?'] and '오류' not in time_pillar_str else '?'})"
 
             saju_myeongshik_detail_for_guideline = (
-                f"연주: {get_pillar_display(year_pillar_str, year_unseong)}, "
-                f"월주: {get_pillar_display(month_pillar_str, month_unseong)}, "
-                f"일주: {get_pillar_display(day_pillar_str, day_unseong)}, "
-                f"시주: {get_pillar_display(time_pillar_str, time_unseong)}"
+                f"연주: {year_display_text}, "
+                f"월주: {month_display_text}, "
+                f"일주: {day_display_text}, "
+                f"시주: {time_display_text}"
             )
             guideline_parts.append(f"사주 명식 (+12운성) ▶ {saju_myeongshik_detail_for_guideline}")
-        else:
-            guideline_parts.append("사주 명식 ▶ 정보 부족")
+            
+            # 사주 기준 연도 정보도 클립보드에 추가 (이전에 논의되었던 부분)
+            if 'saju_year_val' in locals():
+                 guideline_parts.append(f"사주 기준 연도 (입춘 기준) ▶ {saju_year_val}년")
 
+        else:
+            # 필요한 변수 중 하나라도 정의되지 않은 경우
+            guideline_parts.append("사주 명식 (+12운성) ▶ 기본 정보 부족으로 표시 불가 (코드 확인 필요)")
+        # --- [클립보드 복사 내용] 사주 명식 (+12운성) 정보 추가 끝 ---
+        
         if 'shinkang_status_result' in locals() and 'shinkang_explanation_html' in locals():
             guideline_parts.append(f"일간 강약 ▶ {shinkang_status_result}: {strip_html_tags(shinkang_explanation_html)}")
         else:
