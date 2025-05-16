@@ -9,7 +9,6 @@ import os
 import math
 import re
 
-st.error("!!!!!!!!!! 최상단 테스트: 이 메시지가 보이면 파일 변경이 적용된 것입니다 !!!!!!!!!!")
 
 # import pandas as pd # 등 나머지 코드가 이어집니다.
 # ...
