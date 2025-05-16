@@ -1847,90 +1847,28 @@ if st.sidebar.button("🧮 계산 실행", use_container_width=True, type="prima
 
 
 
-        # ▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼ [디버깅 코드 삽입] ▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼
-        st.write("--- [클립보드 복사 내용 생성 로직 디버깅] ---")
-        
-        # 1. saju_8char_for_analysis 내용 확인 (analysis_possible 판단의 근거)
-        saju_8_char_dict = locals().get('saju_8char_for_analysis', {})
-        st.write(f"DEBUG: saju_8char_for_analysis = {saju_8_char_dict}")
-        # 각 글자 유효성 직접 확인 (예시)
-        for k, v in saju_8_char_dict.items():
-            is_valid_char = bool(v and len(v) == 1 and ((k.endswith("_gan") and v in GAN) or (k.endswith("_ji") and v in JI)))
-            if not is_valid_char:
-                st.write(f"DEBUG: 유효하지 않은 사주 글자 발견! Key: {k}, Value: '{v}'")
-        
-        # 2. analysis_possible 변수 값 확인
-        analysis_possible_val = locals().get('analysis_possible', "변수 없음")
-        st.write(f"DEBUG: analysis_possible = {analysis_possible_val}")
+        # ▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼ [ 여기에 아래 디버깅 코드만 넣어주세요 ] ▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼
+        st.markdown("---") # 화면에 구분선을 그립니다.
+        st.subheader("🐞 코드 디버깅 중 (상태 확인) 🐞") # 디버깅 섹션 제목
+        st.caption("이 메시지들은 오행/십신 정보를 복사 내용에 넣기 직전의 중요 변수 값입니다.")
 
-        # 3. ohaeng_strengths 변수 확인
-        ohaeng_strengths_val = locals().get('ohaeng_strengths', "변수 없음")
-        st.write(f"DEBUG: ohaeng_strengths = {ohaeng_strengths_val}")
-        if isinstance(ohaeng_strengths_val, dict) and not ohaeng_strengths_val:
-            st.write("DEBUG: ohaeng_strengths 딕셔너리가 비어있습니다.")
+        # 1. 'analysis_possible' 변수가 True인지 False인지 확인합니다.
+        debug_analysis_possible = locals().get('analysis_possible', "⚠️ 'analysis_possible' 변수 없음")
+        st.info(f"➡️ 분석 가능 상태 (analysis_possible): {debug_analysis_possible}")
 
-        # 4. sipshin_strengths 변수 확인
-        sipshin_strengths_val = locals().get('sipshin_strengths', "변수 없음")
-        st.write(f"DEBUG: sipshin_strengths = {sipshin_strengths_val}")
-        if isinstance(sipshin_strengths_val, dict) and not sipshin_strengths_val:
-            st.write("DEBUG: sipshin_strengths 딕셔너리가 비어있습니다.")
+        # 2. 'ohaeng_strengths' 변수에 오행별 세력 값이 잘 들어있는지 확인합니다.
+        debug_ohaeng_strengths = locals().get('ohaeng_strengths', "⚠️ 'ohaeng_strengths' 변수 없음")
+        st.text(f"➡️ 오행 세력 (ohaeng_strengths): {debug_ohaeng_strengths}")
 
-        # 5. day_gan_char 변수 확인
-        day_gan_char_val = locals().get('day_gan_char', "변수 없음")
-        st.write(f"DEBUG: day_gan_char = '{day_gan_char_val}'")
-        if isinstance(day_gan_char_val, str) and not day_gan_char_val:
-             st.write("DEBUG: day_gan_char 변수가 비어있는 문자열입니다.")
-        st.write("--- [디버깅 코드 끝] ---")
-        # ▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲ [디버깅 코드 삽입] ▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲
+        # 3. 'sipshin_strengths' 변수에 십신별 세력 값이 잘 들어있는지 확인합니다.
+        debug_sipshin_strengths = locals().get('sipshin_strengths', "⚠️ 'sipshin_strengths' 변수 없음")
+        st.text(f"➡️ 십신 세력 (sipshin_strengths): {debug_sipshin_strengths}")
 
-        # ▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼ [기존 오행 분포 정보 추가 코드] ▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼
-        ohaeng_distribution_text_parts = []
-        # if 조건문 자체도 디버깅을 위해 잠시 수정하여 각 부분이 참인지 확인
-        cond1_ohaeng = 'ohaeng_strengths' in locals()
-        cond2_ohaeng = bool(locals().get('ohaeng_strengths')) # 딕셔너리가 비어있지 않은지
-        cond3_ohaeng = locals().get('analysis_possible', False)
-        # st.write(f"DEBUG OHAENG Conds: {cond1_ohaeng}, {cond2_ohaeng}, {cond3_ohaeng}") # 상세 조건 확인
-
-        if cond1_ohaeng and cond2_ohaeng and cond3_ohaeng:
-            ohaeng_values_text = ", ".join([f"{OHENG_TO_HANJA.get(o, o)}({o}): {locals()['ohaeng_strengths'].get(o, 0.0)}" for o in OHENG_ORDER]) # locals() 사용 명시
-            ohaeng_distribution_text_parts.append(f"세력 값: {ohaeng_values_text}")
-            
-            ohaeng_summary_text_for_guideline = get_ohaeng_summary_explanation(locals()['ohaeng_strengths'])
-            ohaeng_distribution_text_parts.append(f"요약: {strip_html_tags(ohaeng_summary_text_for_guideline)}")
-            
-            guideline_parts.append(f"오행 분포 ▶\n" + "\n".join(ohaeng_distribution_text_parts))
-        else:
-            reason = []
-            if not (cond1_ohaeng and cond2_ohaeng): reason.append("ohaeng_strengths 문제")
-            if not cond3_ohaeng: reason.append("analysis_possible 문제")
-            guideline_parts.append(f"오행 분포 ▶ 추가 조건 실패 ({', '.join(reason)})")
-        # ▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲ [기존 오행 분포 정보 추가 코드] ▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲
-
-        # ▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼ [기존 십신 분포 정보 추가 코드] ▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼
-        sipshin_distribution_text_parts = []
-        cond1_sipshin = 'sipshin_strengths' in locals()
-        cond2_sipshin = bool(locals().get('sipshin_strengths'))
-        cond3_sipshin = locals().get('analysis_possible', False)
-        cond4_sipshin = 'day_gan_char' in locals()
-        cond5_sipshin = bool(locals().get('day_gan_char'))
-        # st.write(f"DEBUG SIPSHIN Conds: {cond1_sipshin}, {cond2_sipshin}, {cond3_sipshin}, {cond4_sipshin}, {cond5_sipshin}") # 상세 조건 확인
-
-        if cond1_sipshin and cond2_sipshin and cond3_sipshin and cond4_sipshin and cond5_sipshin:
-            sipshin_values_text = ", ".join([f"{s}: {locals()['sipshin_strengths'].get(s, 0.0)}" for s in SIPSHIN_ORDER])
-            sipshin_distribution_text_parts.append(f"세력 값: {sipshin_values_text}")
-
-            sipshin_summary_text_for_guideline = get_sipshin_summary_explanation(locals()['sipshin_strengths'], locals()['day_gan_char'])
-            sipshin_distribution_text_parts.append(f"요약: {strip_html_tags(sipshin_summary_text_for_guideline)}")
-            
-            guideline_parts.append(f"십신 분포 ▶\n" + "\n".join(sipshin_distribution_text_parts))
-        else:
-            reason = []
-            if not (cond1_sipshin and cond2_sipshin): reason.append("sipshin_strengths 문제")
-            if not cond3_sipshin: reason.append("analysis_possible 문제")
-            if not (cond4_sipshin and cond5_sipshin): reason.append("day_gan_char 문제")
-            guideline_parts.append(f"십신 분포 ▶ 추가 조건 실패 ({', '.join(reason)})")
-        # ▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲ [기존 십신 분포 정보 추가 코드] ▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲
-        
+        # 4. 'day_gan_char' (일간) 변수가 무엇인지 확인합니다. (십신 계산에 중요)
+        debug_day_gan_char = locals().get('day_gan_char', "⚠️ 'day_gan_char' 변수 없음")
+        st.text(f"➡️ 일간 글자 (day_gan_char): '{debug_day_gan_char}'")
+        st.markdown("---") # 화면에 구분선을 그립니다.
+        # ▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲ [ 여기까지가 추가할 디버깅 코드입니다 ] ▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲        
         if 'hap_chung_results_dict' in locals() and hap_chung_results_dict:
             has_interaction = False
             for kind, items in hap_chung_results_dict.items():
