@@ -1841,39 +1841,46 @@ if st.sidebar.button("🧮 계산 실행", use_container_width=True, type="prima
         else:
             guideline_parts.append(f"격국 ▶ {locals().get('gekuk_name_result', '정보 없음')}")
 
+
+        # --- [디버깅 출력 시작] ---
+        st.write("--- 디버깅: 오행/십신 추가 전 변수 상태 ---")
+        st.write(f"ohaeng_strengths 존재 여부: {'ohaeng_strengths' in locals() and bool(locals().get('ohaeng_strengths'))}")
+        st.write(f"analysis_possible 값: {locals().get('analysis_possible', '변수 없음')}")
+        st.write(f"sipshin_strengths 존재 여부: {'sipshin_strengths' in locals() and bool(locals().get('sipshin_strengths'))}")
+        st.write(f"day_gan_char 값: {locals().get('day_gan_char', '변수 없음')}")
+        st.write(f"day_gan_char 유효성: {bool(locals().get('day_gan_char'))}")
+        # --- [디버깅 출력 끝] ---
+
         # ▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼ [수정 시작] 오행 분포 정보 추가 ▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼
         ohaeng_distribution_text_parts = []
-        # 'analysis_possible' 변수는 이미 상단에서 사주 분석 가능 여부를 판단하여 설정되어 있어야 합니다.
-        # 'ohaeng_strengths' 변수는 calculate_ohaeng_sipshin_strengths 함수를 통해 계산되어 있어야 합니다.
         if 'ohaeng_strengths' in locals() and ohaeng_strengths and locals().get('analysis_possible', False):
-            # 각 오행의 이름(한자 포함)과 세력 값을 문자열로 만듭니다.
-            ohaeng_values_text = ", ".join([f"{OHENG_TO_HANJA.get(o, o)}({o}): {ohaeng_strengths.get(o, 0.0)}" for o in OHENG_ORDER])
-            ohaeng_distribution_text_parts.append(f"세력 값: {ohaeng_values_text}")
-            
-            # 오행 요약 설명을 가져와 HTML 태그를 제거합니다.
-            ohaeng_summary_text_for_guideline = get_ohaeng_summary_explanation(ohaeng_strengths)
-            ohaeng_distribution_text_parts.append(f"요약: {strip_html_tags(ohaeng_summary_text_for_guideline)}")
-            
-            guideline_parts.append(f"오행 분포 ▶\n" + "\n".join(ohaeng_distribution_text_parts))
+            st.write("--- 디버깅: 오행 정보 추가 조건 통과 ---") # 조건 통과 확인용
+# ... (이하 오행 코드) ...
         else:
-            guideline_parts.append("오행 분포 ▶ 분석 정보 없음 또는 분석 불가")
+            st.write("--- 디버깅: 오행 정보 추가 조건 실패 ---") # 조건 실패 확인용
+            # 실패 원인도 출력해볼 수 있습니다.
+            if not ('ohaeng_strengths' in locals() and ohaeng_strengths):
+                st.write("오행 강도 정보가 없거나 비어있습니다.")
+            if not locals().get('analysis_possible', False):
+                st.write("analysis_possible이 False입니다.")
+            guideline_parts.append("오행 분포 ▶ 분석 정보 없음 또는 분석 불가 (조건 불충족)")
         # ▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲ [수정 끝] 오행 분포 정보 추가 ▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲
 
         # ▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼ [수정 시작] 십신 분포 정보 추가 ▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼
         sipshin_distribution_text_parts = []
-        # 'sipshin_strengths' 변수와 'day_gan_char' 변수가 사용 가능해야 합니다.
         if 'sipshin_strengths' in locals() and sipshin_strengths and locals().get('analysis_possible', False) and 'day_gan_char' in locals() and day_gan_char:
-            # 각 십신의 이름과 세력 값을 문자열로 만듭니다.
-            sipshin_values_text = ", ".join([f"{s}: {sipshin_strengths.get(s, 0.0)}" for s in SIPSHIN_ORDER])
-            sipshin_distribution_text_parts.append(f"세력 값: {sipshin_values_text}")
-
-            # 십신 요약 설명을 가져와 HTML 태그를 제거합니다.
-            sipshin_summary_text_for_guideline = get_sipshin_summary_explanation(sipshin_strengths, day_gan_char)
-            sipshin_distribution_text_parts.append(f"요약: {strip_html_tags(sipshin_summary_text_for_guideline)}")
-            
-            guideline_parts.append(f"십신 분포 ▶\n" + "\n".join(sipshin_distribution_text_parts))
+            st.write("--- 디버깅: 십신 정보 추가 조건 통과 ---") # 조건 통과 확인용
+# ... (이하 십신 코드) ...
         else:
-            guideline_parts.append("십신 분포 ▶ 분석 정보 없음, 일간 정보 누락 또는 분석 불가")
+            st.write("--- 디버깅: 십신 정보 추가 조건 실패 ---") # 조건 실패 확인용
+            # 실패 원인도 출력해볼 수 있습니다.
+            if not ('sipshin_strengths' in locals() and sipshin_strengths):
+                st.write("십신 강도 정보가 없거나 비어있습니다.")
+            if not locals().get('analysis_possible', False):
+                st.write("analysis_possible이 False입니다.")
+            if not ('day_gan_char' in locals() and day_gan_char):
+                st.write("day_gan_char가 없거나 비어있습니다.")
+            guideline_parts.append("십신 분포 ▶ 분석 정보 없음, 일간 정보 누락 또는 분석 불가 (조건 불충족)")
         # ▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲ [수정 끝] 십신 분포 정보 추가 ▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲
 
         
