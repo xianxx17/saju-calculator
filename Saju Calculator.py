@@ -1918,8 +1918,6 @@ if st.sidebar.button("🧮 계산 실행", use_container_width=True, type="prima
             # ... (이하 디버깅 코드) ...
             st.divider()
             # ▲▲▲▲▲▲▲▲▲▲▲▲ [ 여기까지 디버깅 코드 ] ▲▲▲▲▲▲▲▲▲▲▲▲
-
-            myeongshik_vars_defined = all( # 이 라인 바로 위에 디버깅 코드가 있어야 합니다.
         myeongshik_vars_defined = all(
             var_name in locals() for var_name in [
                 'year_pillar_str', 'month_pillar_str', 'day_pillar_str', 'time_pillar_str',
