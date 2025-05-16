@@ -1552,6 +1552,27 @@ if st.sidebar.button("🧮 계산 실행", use_container_width=True, type="prima
         month_unseong = get_12_unseong(month_gan_char, month_ji_char)
         day_unseong = get_12_unseong(day_gan_char, day_ji_char)
         time_unseong = get_12_unseong(time_gan_char, time_ji_char)
+
+
+        # ▼▼▼▼▼▼▼▼▼▼▼▼ [ 여기에 아래 일간포태 계산 코드 추가 ] ▼▼▼▼▼▼▼▼▼▼▼▼
+        # --- 일간 기준 12운성 (일간포태) 값 계산 ---
+        # day_gan_char, year_ji_char, month_ji_char, day_ji_char, time_ji_char 변수는 이미 앞에서 계산됨
+
+        ilgan_potae_vs_year = "?" # 기본값
+        if 'day_gan_char' in locals() and day_gan_char and 'year_ji_char' in locals() and year_ji_char and year_ji_char not in ["?", "오류"]:
+            ilgan_potae_vs_year = get_12_unseong(day_gan_char, year_ji_char)
+
+        ilgan_potae_vs_month = "?" # 기본값
+        if 'day_gan_char' in locals() and day_gan_char and 'month_ji_char' in locals() and month_ji_char and month_ji_char not in ["?", "오류"]:
+            ilgan_potae_vs_month = get_12_unseong(day_gan_char, month_ji_char)
+
+        ilgan_potae_vs_day = day_unseong # 일간 vs 일지이므로, 일주 자체의 운성(day_unseong)과 동일
+
+        ilgan_potae_vs_time = "?" # 기본값
+        if 'day_gan_char' in locals() and day_gan_char and 'time_ji_char' in locals() and time_ji_char and time_ji_char not in ["?", "오류"]:
+            ilgan_potae_vs_time = get_12_unseong(day_gan_char, time_ji_char)
+        # ▲▲▲▲▲▲▲▲▲▲▲▲ [ 여기까지 일간포태 계산 코드 추가 ] ▲▲▲▲▲▲▲▲▲▲▲▲        
+
         
         # ==================================================================
         # ▼▼▼▼▼▼▼▼▼▼▼▼▼ 생년월일 및 현재 나이 표시 코드 (여기에 삽입) ▼▼▼▼▼▼▼▼▼▼▼▼▼
@@ -1627,6 +1648,49 @@ if st.sidebar.button("🧮 계산 실행", use_container_width=True, type="prima
         st.caption(saju_year_caption)
         st.session_state.interpretation_segments.append(("📜 사주 명식", ms_df.to_markdown() + "\n" + saju_year_caption))
 
+        # ▼▼▼▼▼▼▼▼▼▼▼▼ [ 여기에 아래 일간포태 UI 표시 코드 추가 ] ▼▼▼▼▼▼▼▼▼▼▼▼
+        # --- 화면에 일간 기준 12운성 (일간포태) 표시 ---
+        current_day_gan_for_ui = locals().get('day_gan_char') # 안전하게 변수 가져오기
+        analysis_ok_for_ui = locals().get('analysis_possible', False)
+
+        if analysis_ok_for_ui and current_day_gan_for_ui and \
+           current_day_gan_for_ui not in ["?", "오류", "입력오류", "계산불가"]:
+
+            st.markdown("---")
+            st.subheader(f"📖 일간({current_day_gan_for_ui}) 기준 12운성 (일간포태)")
+
+            # 각 지지 변수 안전하게 가져오기
+            yj_for_ui = locals().get('year_ji_char', '?')
+            mj_for_ui = locals().get('month_ji_char', '?')
+            dj_for_ui = locals().get('day_ji_char', '?')
+            tj_for_ui = locals().get('time_ji_char', '?')
+
+            # 위에서 계산된 일간포태 변수 사용
+            potae_data_for_table = [
+                {"기준 지지": f"년지({yj_for_ui})", "일간의 12운성": ilgan_potae_vs_year},
+                {"기준 지지": f"월지({mj_for_ui})", "일간의 12운성": ilgan_potae_vs_month},
+                {"기준 지지": f"일지({dj_for_ui})", "일간의 12운성": ilgan_potae_vs_day}, # day_unseong과 동일
+                {"기준 지지": f"시지({tj_for_ui})", "일간의 12운성": ilgan_potae_vs_time}
+            ]
+
+            # 유효하지 않은 지지 정보는 필터링하거나 "?"로 표시되도록 이미 처리됨
+            potae_df_for_ui = pd.DataFrame(potae_data_for_table)
+            if not potae_df_for_ui.empty:
+                st.table(potae_df_for_ui.set_index("기준 지지"))
+
+            # "전체 풀이 내용 다시 보기" 섹션에도 추가 (해설 없이 운성 이름만)
+            segment_text_potae = f"**일간({current_day_gan_for_ui}) 기준 12운성 (일간포태):**\n"
+            segment_text_potae += f"- vs 년지({yj_for_ui}): **{ilgan_potae_vs_year}**\n"
+            segment_text_potae += f"- vs 월지({mj_for_ui}): **{ilgan_potae_vs_month}**\n"
+            segment_text_potae += f"- vs 일지({dj_for_ui}): **{ilgan_potae_vs_day}**\n"
+            segment_text_potae += f"- vs 시지({tj_for_ui}): **{ilgan_potae_vs_time}**"
+            st.session_state.interpretation_segments.append(("📖 일간 기준 12운성 (일간포태)", segment_text_potae))
+
+        else: # 일간 정보가 유효하지 않은 경우
+            st.markdown("---")
+            st.text("일간 정보가 유효하지 않아 '일간 기준 12운성(일간포태)'을 표시할 수 없습니다.")
+        # ▲▲▲▲▲▲▲▲▲▲▲▲ [ 여기까지 일간포태 UI 표시 코드 추가 ] ▲▲▲▲▲▲▲▲▲▲▲▲
+        
         # --- 분석을 위한 8글자 준비 및 유효성 검사 ---
         saju_8char_for_analysis = {
             "year_gan": year_gan_char, "year_ji": year_ji_char,
@@ -1941,6 +2005,35 @@ if st.sidebar.button("🧮 계산 실행", use_container_width=True, type="prima
             )
             guideline_parts.append(f"사주 명식 (+12운성 궁위포태) ▶ {saju_myeongshik_detail_for_guideline}")
             guideline_parts.append(f"사주 기준 연도 (입춘 기준) ▶ {saju_year_val}년")
+            guideline_parts.append(f"사주 기준 연도 (입춘 기준) ▶ {saju_year_val_for_guideline}") # 기존 코드 (변수명은 제가 수정한 것으로 가정)
+
+        # ▼▼▼▼▼▼▼▼▼▼▼▼ [ 여기에 아래 일간포태 클립보드 추가 코드 ] ▼▼▼▼▼▼▼▼▼▼▼▼
+        # --- 클립보드 복사 내용에 일간 기준 12운성 (일간포태) 추가 ---
+        current_day_gan_for_guideline = locals().get('day_gan_char') # 안전하게 변수 가져오기
+        if current_day_gan_for_guideline and current_day_gan_for_guideline not in ["?", "오류", "입력오류", "계산불가"] and \
+           'ilgan_potae_vs_year' in locals(): # 일간포태 변수들이 계산되었다면
+
+            # 위에서 계산된 일간포태 변수 사용 (ilgan_potae_vs_year, _month, _day, _time)
+            # 각 지지 변수도 안전하게 가져오기
+            yj_cb = locals().get('year_ji_char', '?')
+            mj_cb = locals().get('month_ji_char', '?')
+            dj_cb = locals().get('day_ji_char', '?')
+            tj_cb = locals().get('time_ji_char', '?')
+
+            potae_parts_for_guideline = []
+            if yj_cb != '?': potae_parts_for_guideline.append(f"년지({yj_cb}):{ilgan_potae_vs_year}")
+            if mj_cb != '?': potae_parts_for_guideline.append(f"월지({mj_cb}):{ilgan_potae_vs_month}")
+            if dj_cb != '?': potae_parts_for_guideline.append(f"일지({dj_cb}):{ilgan_potae_vs_day}")
+            if tj_cb != '?': potae_parts_for_guideline.append(f"시지({tj_cb}):{ilgan_potae_vs_time}")
+
+            if potae_parts_for_guideline:
+                guideline_parts.append(f"일간({current_day_gan_for_guideline}) 기준 12운성 (일간포태) ▶ {', '.join(potae_parts_for_guideline)}")
+            else:
+                guideline_parts.append(f"일간({current_day_gan_for_guideline}) 기준 12운성 (일간포태) ▶ 정보 없음")
+        elif 'guideline_parts' in locals() and isinstance(guideline_parts, list): # 일간 정보가 유효하지 않은 경우
+             guideline_parts.append(f"일간 기준 12운성 (일간포태) ▶ 일간 정보 부족 또는 계산 불가")
+        # ▲▲▲▲▲▲▲▲▲▲▲▲ [ 여기까지 일간포태 클립보드 추가 코드 ] ▲▲▲▲▲▲▲▲▲▲▲▲
+
         else:
             # 이 부분은 정상 작동 시 실행되지 않아야 합니다.
             # 하지만 만약을 위해, 어떤 변수가 문제였는지 알 수 있도록 메시지를 남깁니다.
