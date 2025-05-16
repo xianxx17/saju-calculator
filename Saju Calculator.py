@@ -1480,10 +1480,7 @@ ty = st.sidebar.number_input("기준 연도 ", min_input_year, max_input_year + 
 tm = st.sidebar.number_input("기준 월  ", 1, 12, today.month, key="ui_target_month_final")
 td = st.sidebar.number_input("기준 일  ", 1, 31, today.day, key="ui_target_day_final")
 
-if st.sidebar.button("🧮 계산 실행", use_container_width=True, type="primary"):
-
-    st.balloons() # <--- 이 한 줄만 "계산 실행" 버튼 if문 바로 안 첫 줄에 추가!
-    
+if st.sidebar.button("🧮 계산 실행", use_container_width=True, type="primary"):    
     st.session_state.interpretation_segments = []
     st.session_state.saju_calculated_once = False
     st.session_state.show_interpretation_guide_on_click = False
