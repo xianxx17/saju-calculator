@@ -1927,13 +1927,6 @@ if st.sidebar.button("🧮 계산 실행", use_container_width=True, type="prima
         # ▲▲▲▲▲▲▲▲▲▲▲▲ [ 여기까지 디버깅 코드 ] ▲▲▲▲▲▲▲▲▲▲▲▲
 # (이전 코드... 예를 들어, "🔍 변수 존재 여부 확인 (사주 명식 클립보드용)" 디버깅 코드의 마지막 라인인 st.divider() 다음 줄부터입니다.)
 
-# ... (보여주신 디버깅 코드의 마지막 부분) ...
-        if all_myeongshik_vars_available_debug:
-            st.info("👍 (클립보드 명식 디버그) 모든 필수 변수가 존재합니다.")
-        else:
-            st.warning("⚠️ (클립보드 명식 디버그) 일부 필수 변수가 없습니다. 위 목록 확인!")
-        st.divider() # <--- 보여주신 디버깅 코드의 마지막 라인
-
             # ▼▼▼▼▼▼▼▼▼▼▼▼ [ 이 아래 코드가 바로 다음에, 위 st.divider()와 같은 들여쓰기로 와야 합니다 ] ▼▼▼▼▼▼▼▼▼▼▼▼
             # 1. 확인할 변수 이름 리스트 (이전에 화면 디버깅에서 사용했던 것과 동일한 목록)
             myeongshik_clipboard_required_vars_for_all_check = [
