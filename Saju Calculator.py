@@ -1895,60 +1895,64 @@ if st.sidebar.button("🧮 계산 실행", use_container_width=True, type="prima
         # ------------------------------------------------------------------
         
 
-        # --- [시작] 클립보드 복사 내용: 사주 명식 (+12운성) 정보 추가 ---
-        # 이 코드는 guideline_parts 리스트에 사주 명식 정보를 추가합니다.
-        # 필수 변수들이 이전에 모두 올바르게 계산되었다고 가정합니다.
+# ... (이전에 guideline_parts.append(f"현재 만 나이 ▶ ...") 등이 끝난 다음 줄)
+
+            # --- [시작] 클립보드 복사 내용: 사주 명식 (+12운성) 정보 추가 ---
+            # 이 코드는 guideline_parts 리스트에 사주 명식 정보를 추가합니다.
+            # 필수 변수들이 이전에 모두 올바르게 계산되었다고 가정합니다.
             
-        # 1. 확인할 필수 변수 이름 목록 정의
-            required_vars_for_myeongshik_clipboard = [
-                'year_pillar_str', 'month_pillar_str', 'day_pillar_str', 'time_pillar_str',
-                'year_unseong', 'month_unseong', 'day_unseong', 'time_unseong',
-                'saju_year_val'
-            ]
+            # 1. 확인할 필수 변수 이름 목록 정의
+        required_vars_for_myeongshik_clipboard = [
+            'year_pillar_str', 'month_pillar_str', 'day_pillar_str', 'time_pillar_str',
+            'year_unseong', 'month_unseong', 'day_unseong', 'time_unseong',
+            'saju_year_val'
+        ]
 
             # 2. 모든 필수 변수가 locals()에 실제로 존재하는지 내부적으로만 확인
-            all_individual_vars_present_for_clipboard = True
-            for var_name_check_cb in required_vars_for_myeongshik_clipboard:
-                if var_name_check_cb not in locals():
-                    all_individual_vars_present_for_clipboard = False
-                    break 
+        all_individual_vars_present_for_clipboard = True
+        for var_name_check_cb in required_vars_for_myeongshik_clipboard:
+            if var_name_check_cb not in locals():
+                all_individual_vars_present_for_clipboard = False
+                break 
             
             # 3. 불리언 리스트 생성 및 all() 함수 적용
-            boolean_list_for_all_func_cb = []
-            # all_individual_vars_present_for_clipboard가 False라도, 
-            # 정확한 에러 메시지 출력을 위해 boolean_list_for_all_func_cb는 만듭니다.
-            for var_name_for_bool_list_cb in required_vars_for_myeongshik_clipboard:
+        boolean_list_for_all_func_cb = []
+        for var_name_for_bool_list_cb in required_vars_for_myeongshik_clipboard:
                 boolean_list_for_all_func_cb.append(var_name_for_bool_list_cb in locals())
             
-            final_condition_met_for_clipboard = all(boolean_list_for_all_func_cb)
+        final_condition_met_for_clipboard = all(boolean_list_for_all_func_cb)
+
+            # (선택적 디버깅) all() 함수의 최종 결과값을 화면에 error 메시지로 표시하려면 아래 주석 해제
+            # st.error(f"DEBUG (클립보드 명식용): final_condition_met_for_clipboard = {final_condition_met_for_clipboard}")
+            # st.text(f"DEBUG (클립보드 명식용): boolean_list_for_all_func_cb = {boolean_list_for_all_func_cb}")
+
 
             # 4. 최종 조건에 따라 guideline_parts에 정보 추가
-            if final_condition_met_for_clipboard:
+        if final_condition_met_for_clipboard:
                 year_display_text_cb = f"{year_pillar_str if '오류' not in year_pillar_str else '오류'} ({str(year_unseong) if str(year_unseong) not in ['계산불가', '입력오류', '?'] and '오류' not in year_pillar_str else '?'})"
                 month_display_text_cb = f"{month_pillar_str if '오류' not in month_pillar_str else '오류'} ({str(month_unseong) if str(month_unseong) not in ['계산불가', '입력오류', '?'] and '오류' not in month_pillar_str else '?'})"
                 day_display_text_cb = f"{day_pillar_str if '오류' not in day_pillar_str else '오류'} ({str(day_unseong) if str(day_unseong) not in ['계산불가', '입력오류', '?'] and '오류' not in day_pillar_str else '?'})"
                 time_display_text_cb = f"{time_pillar_str if '오류' not in time_pillar_str else '오류'} ({str(time_unseong) if str(time_unseong) not in ['계산불가', '입력오류', '?'] and '오류' not in time_pillar_str else '?'})"
 
-                saju_myeongshik_detail_for_guideline = (
-                    f"연주: {year_display_text_cb}, "
-                    f"월주: {month_display_text_cb}, "
-                    f"일주: {day_display_text_cb}, "
-                    f"시주: {time_display_text_cb}"
+            saju_myeongshik_detail_for_guideline = (
+                f"연주: {year_display_text_cb}, "
+                f"월주: {month_display_text_cb}, "
+                f"일주: {day_display_text_cb}, "
+                f"시주: {time_display_text_cb}"
                 )
-                guideline_parts.append(f"사주 명식 (+12운성) ▶ {saju_myeongshik_detail_for_guideline}")
-                guideline_parts.append(f"사주 기준 연도 (입춘 기준) ▶ {saju_year_val}년")
-            else:
-                # 이 부분은 정상 작동 시 실행되지 않아야 합니다.
-                missing_vars_final_check_cb = [
-                    var_name for var_name in required_vars_for_myeongshik_clipboard if var_name not in locals()
-                ]
-                reason_for_failure_cb = "알 수 없는 이유" # 기본 메시지
-                if missing_vars_final_check_cb: 
-                    reason_for_failure_cb = f"다음 변수 없음: {', '.join(missing_vars_final_check_cb)}"
-                elif not all_individual_vars_present_for_clipboard : 
-                    reason_for_failure_cb = "필수 변수 확인 단계에서 문제 발견"
+            guideline_parts.append(f"사주 명식 (+12운성) ▶ {saju_myeongshik_detail_for_guideline}")
+            guideline_parts.append(f"사주 기준 연도 (입춘 기준) ▶ {saju_year_val}년")
+        else:
+            missing_vars_final_check_cb = [
+            var_name for var_name in required_vars_for_myeongshik_clipboard if var_name not in locals()
+            ]
+            reason_for_failure_cb = "알 수 없는 이유" 
+            if missing_vars_final_check_cb: 
+                reason_for_failure_cb = f"다음 변수 없음: {', '.join(missing_vars_final_check_cb)}"
+            elif not all_individual_vars_present_for_clipboard : 
+                reason_for_failure_cb = "필수 변수 확인 단계에서 문제 발견"
                                 
-                guideline_parts.append(f"사주 명식 (+12운성) ▶ 기본 정보 부족 ({reason_for_failure_cb})")
+            guideline_parts.append(f"사주 명식 (+12운성) ▶ 기본 정보 부족 ({reason_for_failure_cb})")
             # --- [끝] 클립보드 복사 내용: 사주 명식 (+12운성) 정보 추가 ---        
         
         if 'shinkang_status_result' in locals() and 'shinkang_explanation_html' in locals():
