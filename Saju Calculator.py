@@ -1900,7 +1900,7 @@ if st.sidebar.button("🧮 계산 실행", use_container_width=True, type="prima
         # 필수 변수들이 이전에 모두 올바르게 계산되었다고 가정합니다.
             
         # 1. 확인할 필수 변수 이름 목록 정의
-        required_vars_for_myeongshik_clipboard = [
+            required_vars_for_myeongshik_clipboard = [
                 'year_pillar_str', 'month_pillar_str', 'day_pillar_str', 'time_pillar_str',
                 'year_unseong', 'month_unseong', 'day_unseong', 'time_unseong',
                 'saju_year_val'
