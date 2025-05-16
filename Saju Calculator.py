@@ -1593,7 +1593,7 @@ if st.sidebar.button("🧮 계산 실행", use_container_width=True, type="prima
         # --- 명식 기본 정보 표시 ---
         st.subheader("📜 사주 명식")
         ms_data = {
-            "구분": ["천간", "지지", "간지", "12운성"], # "12운성" 행 추가
+            "구분": ["천간", "지지", "간지", "12운성 궁위포태"], # "12운성" 행 추가
             "시주": [
                 time_gan_char if "오류" not in time_pillar_str else "?",
                 time_ji_char if "오류" not in time_pillar_str else "?",
