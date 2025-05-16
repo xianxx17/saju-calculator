@@ -1572,7 +1572,17 @@ if st.sidebar.button("🧮 계산 실행", use_container_width=True, type="prima
         if 'day_gan_char' in locals() and day_gan_char and 'time_ji_char' in locals() and time_ji_char and time_ji_char not in ["?", "오류"]:
             ilgan_potae_vs_time = get_12_unseong(day_gan_char, time_ji_char)
         # ▲▲▲▲▲▲▲▲▲▲▲▲ [ 여기까지 일간포태 계산 코드 추가 ] ▲▲▲▲▲▲▲▲▲▲▲▲        
+# ... (time_unseong = get_12_unseong(time_gan_char, time_ji_char) 다음 줄에) ...
+        st.write("DEBUG: year_gan_char:", year_gan_char, "year_ji_char:", year_ji_char)
+        st.write("DEBUG: month_gan_char:", month_gan_char, "month_ji_char:", month_ji_char)
+        st.write("DEBUG: day_gan_char:", day_gan_char, "day_ji_char:", day_ji_char)
+        st.write("DEBUG: time_gan_char:", time_gan_char, "time_ji_char:", time_ji_char)
 
+# ... (ilgan_potae_vs_time 계산 직후에) ...
+        st.write("DEBUG: ilgan_potae_vs_year:", ilgan_potae_vs_year)
+        st.write("DEBUG: ilgan_potae_vs_month:", ilgan_potae_vs_month)
+        st.write("DEBUG: ilgan_potae_vs_day:", ilgan_potae_vs_day) # day_unseong과 동일
+        st.write("DEBUG: ilgan_potae_vs_time:", ilgan_potae_vs_time)
         
         # ==================================================================
         # ▼▼▼▼▼▼▼▼▼▼▼▼▼ 생년월일 및 현재 나이 표시 코드 (여기에 삽입) ▼▼▼▼▼▼▼▼▼▼▼▼▼
