@@ -1892,99 +1892,58 @@ if st.sidebar.button("🧮 계산 실행", use_container_width=True, type="prima
         # guideline_parts.append("---") 
         # ------------------------------------------------------------------
         # ▲▲▲▲▲▲▲▲▲▲▲▲▲▲ "guideline_parts"에 기본 정보 추가 끝 ▲▲▲▲▲▲▲▲▲▲▲▲▲
-        # ------------------------------------------------------------------
+        # ------------------------------------------------------------------# (예시: 바로 윗줄이 guideline_parts.append("격국 정보...") 였다면,
+        # 아래 "# --- [시작] 클립보드..." 라인의 시작도 동일한 공백으로 시작합니다.)
 
-        # (이전 guideline_parts.append(...) 코드들이 이 위에 있을 수 있습니다.
-        # 예를 들어, 격국 정보를 추가한 다음 줄이 될 수 있습니다.)
-
-        # --- [시작] 클립보드 복사 내용: 사주 명식 (+12운성) 정보 추가 ---
+        # --- [시작] 클립보드 복사 내용: 사주 명식 (+12운성) 정보 추가 (디버깅 포함) ---
         # 이 코드는 guideline_parts 리스트에 사주 명식 정보를 추가합니다.
         # 필수 변수들이 이전에 모두 올바르게 계산되었다고 가정합니다.
 
-        # ▼▼▼▼▼▼▼▼▼▼▼▼ [ 디버깅 코드: 변수 존재 및 값 확인 ] ▼▼▼▼▼▼▼▼▼▼▼▼
-        # 이 부분의 들여쓰기가 매우 중요합니다. guideline_parts.append(...)와 같은 수준이어야 합니다.
         st.divider() 
-        st.subheader("🔍 변수 존재 여부 확인 (사주 명식 클립보드용)")
+        st.subheader("⭐️ 최종확인: 명식(12운성포함) 클립보드 추가 전 변수상태")
 
-        myeongshik_clipboard_required_vars_debug = [
+        # 1. 확인할 필수 변수 이름 목록 (이 목록의 정확성이 중요합니다)
+        required_vars_for_myeongshik_clipboard = [
             'year_pillar_str', 'month_pillar_str', 'day_pillar_str', 'time_pillar_str',
             'year_unseong', 'month_unseong', 'day_unseong', 'time_unseong',
-            'saju_year_val' 
+            'saju_year_val'  # 사주 기준 연도 변수
         ]
-        all_myeongshik_vars_available_debug = True
-        for var_name_debug_check in myeongshik_clipboard_required_vars_debug:
-            if var_name_debug_check in locals():
-                st.success(f"✅ (클립보드 명식 디버그) '{var_name_debug_check}' 존재, 값: {locals()[var_name_debug_check]}")
-            else:
-                st.error(f"❌ (클립보드 명식 디버그) '{var_name_debug_check}' 없음!!!")
-                all_myeongshik_vars_available_debug = False
+        st.text(f"DEBUG: 클립보드 명식에 필요한 변수 목록: {required_vars_for_myeongshik_clipboard}")
 
-        if all_myeongshik_vars_available_debug:
-            st.info("👍 (클립보드 명식 디버그) 모든 필수 변수가 존재합니다.")
+        # 2. 각 필수 변수가 locals()에 실제로 존재하는지, 값은 무엇인지 개별 확인 (화면 출력)
+        all_individual_vars_found_for_clipboard = True
+        st.text("--- 개별 변수 존재 및 값 확인 (클립보드 명식용): ---")
+        for var_name_inspect_cb in required_vars_for_myeongshik_clipboard:
+            if var_name_inspect_cb in locals():
+                st.success(f"  ✅ '{var_name_inspect_cb}': 존재, 값 = {locals()[var_name_inspect_cb]}")
+            else:
+                st.error(f"  ❌ '{var_name_inspect_cb}': 없음!!!")
+                all_individual_vars_found_for_clipboard = False
+
+        if all_individual_vars_found_for_clipboard:
+            st.info("  👍 (클립보드 명식용) 모든 개별 필수 변수가 locals()에 존재합니다.")
         else:
-            st.warning("⚠️ (클립보드 명식 디버그) 일부 필수 변수가 없습니다. 위 목록 확인!")
+            st.warning("  ⚠️ (클립보드 명식용) 일부 개별 필수 변수가 locals()에 없습니다. 위의 ❌ 표시를 확인하세요.")
+
+        # 3. 위 변수 목록을 기준으로 boolean 리스트를 명시적으로 생성
+        boolean_list_for_all_func_cb = []
+        # 모든 개별 변수가 존재한다고 확인된 경우에만 정확한 boolean 리스트 생성 시도
+        if all_individual_vars_found_for_clipboard:
+            for var_name_for_bool_list_cb in required_vars_for_myeongshik_clipboard:
+                boolean_list_for_all_func_cb.append(var_name_for_bool_list_cb in locals()) 
+        else: # 일부 변수가 없다면, 참고용으로만 불리언 리스트 생성
+            for var_name_for_bool_list_cb in required_vars_for_myeongshik_clipboard:
+                boolean_list_for_all_func_cb.append(var_name_for_bool_list_cb in locals())
+
+        st.text(f"DEBUG: all() 함수에 입력될 불리언 리스트 (클립보드 명식용): {boolean_list_for_all_func_cb}")
+
+        # 4. all() 함수 적용 및 결과 확인
+        final_condition_met_for_clipboard = all(boolean_list_for_all_func_cb)
+        st.error(f"CRITICAL DEBUG: 최종 조건 (all_myeongshik_vars_available_for_clipboard)의 값 = {final_condition_met_for_clipboard}")
         st.divider()
-        # ▲▲▲▲▲▲▲▲▲▲▲▲ [ 여기까지 디버깅 코드 ] ▲▲▲▲▲▲▲▲▲▲▲▲
-        # ▼▼▼▼▼▼▼▼▼▼▼▼ [ 이 아래 코드가 바로 다음에, 위 st.divider()와 같은 들여쓰기로 와야 합니다 ] ▼▼▼▼▼▼▼▼▼▼▼▼
-        # 1. 확인할 변수 이름 리스트 (이전에 화면 디버깅에서 사용했던 것과 동일한 목록)
-        myeongshik_clipboard_required_vars_for_all_check = [
-                'year_pillar_str', 'month_pillar_str', 'day_pillar_str', 'time_pillar_str',
-                'year_unseong', 'month_unseong', 'day_unseong', 'time_unseong',
-                'saju_year_val'
-            ]
-            # 화면에 이 리스트 내용 확인 (선택적 디버깅)
-            # st.info(f"DEBUG (all 함수용 변수 목록): {myeongshik_clipboard_required_vars_for_all_check}")
 
-            # 2. 각 변수가 locals()에 있는지 확인하여 불리언(True/False) 리스트를 명시적으로 만듭니다.
-            boolean_checks_for_all_function = []
-            for var_name_for_all in myeongshik_clipboard_required_vars_for_all_check: # 이 for문은 위의 myeongshik_... 리스트 정의와 같은 들여쓰기
-                is_present_in_locals = var_name_for_all in locals() # 이 안의 코드는 한 단계 더 들여쓰기
-                boolean_checks_for_all_function.append(is_present_in_locals)
-            
-            # 화면에 생성된 불리언 리스트 확인 (선택적 디버깅)
-            # st.info(f"DEBUG (all 함수에 전달될 불리언 리스트): {boolean_checks_for_all_function}")
-
-            # 3. 명시적으로 만들어진 불리언 리스트에 all() 함수를 적용합니다.
-            all_myeongshik_vars_available_for_clipboard = all(boolean_checks_for_all_function)
-
-            # 4. all() 함수의 최종 결과값을 화면에 error 메시지로 표시합니다.
-            st.error(f"CRITICAL DEBUG: myeongshik_vars_defined_for_clipboard 변수의 실제 값 = {all_myeongshik_vars_available_for_clipboard}")
-
-            # 5. 이 결과를 바탕으로 guideline_parts에 내용을 추가합니다.
-            if all_myeongshik_vars_available_for_clipboard:
-                # (이 부분은 이전에 드렸던 정상 처리 로직과 동일합니다)
-                year_display_text_cb = f"{year_pillar_str if '오류' not in year_pillar_str else '오류'} ({str(year_unseong) if str(year_unseong) not in ['계산불가', '입력오류', '?'] and '오류' not in year_pillar_str else '?'})"
-                month_display_text_cb = f"{month_pillar_str if '오류' not in month_pillar_str else '오류'} ({str(month_unseong) if str(month_unseong) not in ['계산불가', '입력오류', '?'] and '오류' not in month_pillar_str else '?'})"
-                day_display_text_cb = f"{day_pillar_str if '오류' not in day_pillar_str else '오류'} ({str(day_unseong) if str(day_unseong) not in ['계산불가', '입력오류', '?'] and '오류' not in day_pillar_str else '?'})"
-                time_display_text_cb = f"{time_pillar_str if '오류' not in time_pillar_str else '오류'} ({str(time_unseong) if str(time_unseong) not in ['계산불가', '입력오류', '?'] and '오류' not in time_pillar_str else '?'})"
-
-                saju_myeongshik_detail_for_guideline = (
-                    f"연주: {year_display_text_cb}, "
-                    f"월주: {month_display_text_cb}, "
-                    f"일주: {day_display_text_cb}, "
-                    f"시주: {time_display_text_cb}"
-                )
-                guideline_parts.append(f"사주 명식 (+12운성) ▶ {saju_myeongshik_detail_for_guideline}")
-                guideline_parts.append(f"사주 기준 연도 (입춘 기준) ▶ {saju_year_val}년")
-            else:
-                # all() 결과가 False일 때 실행되는 부분
-                missing_vars_list_for_clipboard_msg = [
-                    var_name for var_name in myeongshik_clipboard_required_vars_for_all_check if var_name not in locals()
-                ]
-                if not missing_vars_list_for_clipboard_msg: 
-                     missing_vars_list_for_clipboard_msg.append("알 수 없는 이유 (개별 변수는 존재하나 전체 조건 불충족)")
-                
-                # 화면에 어떤 불리언 리스트로 all()이 False가 되었는지 추가 디버깅
-                st.warning(f"DEBUG: all() 함수에 전달된 불리언 리스트가 False를 반환했습니다: {boolean_checks_for_all_function}")
-
-                guideline_parts.append(f"사주 명식 (+12운성) ▶ 기본 정보 부족 (변수 확인: {', '.join(missing_vars_list_for_clipboard_msg)})")
-            # ▲▲▲▲▲▲▲▲▲▲▲▲ [ 여기까지 교체할 코드입니다 ] ▲▲▲▲▲▲▲▲▲▲▲▲
-
-# ▼▼▼▼▼▼▼▼▼▼▼▼ [ 여기에 아래 st.critical() 한 줄만 추가해주세요 ] ▼▼▼▼▼▼▼▼▼▼▼▼
-        st.error(f"CRITICAL DEBUG: myeongshik_vars_defined_for_clipboard 변수의 실제 값 = {myeongshik_vars_defined_for_clipboard}")
-        # ▲▲▲▲▲▲▲▲▲▲▲▲ [ 여기까지 한 줄입니다 ] ▲▲▲▲▲▲▲▲▲▲▲▲
-
-        if myeongshik_vars_defined_for_clipboard:
+        # 5. 최종 조건에 따라 guideline_parts에 정보 추가
+        if final_condition_met_for_clipboard:
             year_display_text_cb = f"{year_pillar_str if '오류' not in year_pillar_str else '오류'} ({str(year_unseong) if str(year_unseong) not in ['계산불가', '입력오류', '?'] and '오류' not in year_pillar_str else '?'})"
             month_display_text_cb = f"{month_pillar_str if '오류' not in month_pillar_str else '오류'} ({str(month_unseong) if str(month_unseong) not in ['계산불가', '입력오류', '?'] and '오류' not in month_pillar_str else '?'})"
             day_display_text_cb = f"{day_pillar_str if '오류' not in day_pillar_str else '오류'} ({str(day_unseong) if str(day_unseong) not in ['계산불가', '입력오류', '?'] and '오류' not in day_pillar_str else '?'})"
@@ -1999,13 +1958,21 @@ if st.sidebar.button("🧮 계산 실행", use_container_width=True, type="prima
             guideline_parts.append(f"사주 명식 (+12운성) ▶ {saju_myeongshik_detail_for_guideline}")
             guideline_parts.append(f"사주 기준 연도 (입춘 기준) ▶ {saju_year_val}년")
         else:
-            missing_vars_list_for_clipboard_msg = [
-                var_name for var_name in myeongshik_clipboard_required_vars_debug if var_name not in locals()
+            # all() 결과가 False일 때 실행되는 부분
+            missing_vars_final_check_cb = [
+                var_name for var_name in required_vars_for_myeongshik_clipboard if var_name not in locals()
             ]
-            if not missing_vars_list_for_clipboard_msg:
-                 missing_vars_list_for_clipboard_msg.append("알 수 없는 이유 (변수는 존재하나 조건 불충족)")
-            guideline_parts.append(f"사주 명식 (+12운성) ▶ 기본 정보 부족 (다음 변수 확인: {', '.join(missing_vars_list_for_clipboard_msg)})")
-        # --- [끝] 클립보드 복사 내용: 사주 명식 (+12운성) 정보 추가 ---
+            reason_for_failure_cb = "알 수 없는 이유"
+            if missing_vars_final_check_cb: # 실제로 없는 변수가 있다면 그것을 명시
+                reason_for_failure_cb = f"다음 변수 없음: {', '.join(missing_vars_final_check_cb)}"
+            elif not all_individual_vars_found_for_clipboard: # 개별 변수 확인 단계에서 문제가 있었다면
+                reason_for_failure_cb = "개별 변수 확인 단계에서 '없음'으로 표시된 변수 확인 필요"
+            elif all_individual_vars_found_for_clipboard: # 모든 개별 변수는 존재하는데 all()이 False인 경우 (이론상 드묾)
+                 reason_for_failure_cb = "모든 개별 변수는 존재하나, 알 수 없는 이유로 전체 조건 불충족"
+
+            st.warning(f"DEBUG (final_condition_met_for_clipboard=False): all() 함수에 전달된 불리언 리스트: {boolean_list_for_all_func_cb}")
+            guideline_parts.append(f"사주 명식 (+12운성) ▶ 기본 정보 부족 ({reason_for_failure_cb})")
+        # --- [끝] 클립보드 복사 내용: 사주 명식 (+12운성) 정보 추가 (디버깅 포함) ---
         
         if 'shinkang_status_result' in locals() and 'shinkang_explanation_html' in locals():
             guideline_parts.append(f"일간 강약 ▶ {shinkang_status_result}: {strip_html_tags(shinkang_explanation_html)}")
