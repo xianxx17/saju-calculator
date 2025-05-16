@@ -167,6 +167,27 @@ SIPSHIN_COLORS = {
 
 # ... (기존 OHENG_DESCRIPTIONS, SIPSHIN_COLORS 등 상수 정의 이후) ...
 
+# ... (기존 GAN, JI, SAJU_MONTH_TERMS_ORDER 등 상수 정의 이후) ...
+
+# ───────────────────────────────
+# 12운성 관련 상수
+# ───────────────────────────────
+_12_UNSEONG_PHASES_KOR = ["장생", "목욕", "관대", "건록", "제왕", "쇠", "병", "사", "묘", "절", "태", "양"]
+
+# 각 천간(キー)이 각 지지(内部キー)를 만났을 때의 12운성(値)
+_12_UNSEONG_MAP_DATA = {
+    "갑": {"해":"장생", "자":"목욕", "축":"관대", "인":"건록", "묘":"제왕", "진":"쇠", "사":"병", "오":"사", "미":"묘", "신":"절", "유":"태", "술":"양"},
+    "을": {"오":"장생", "사":"목욕", "진":"관대", "묘":"건록", "인":"제왕", "축":"쇠", "자":"병", "해":"사", "술":"묘", "유":"절", "신":"태", "미":"양"},
+    "병": {"인":"장생", "묘":"목욕", "진":"관대", "사":"건록", "오":"제왕", "미":"쇠", "신":"병", "유":"사", "술":"묘", "해":"절", "자":"태", "축":"양"},
+    "정": {"유":"장생", "신":"목욕", "미":"관대", "오":"건록", "사":"제왕", "진":"쇠", "묘":"병", "인":"사", "축":"묘", "자":"절", "해":"태", "술":"양"},
+    "무": {"인":"장생", "묘":"목욕", "진":"관대", "사":"건록", "오":"제왕", "미":"쇠", "신":"병", "유":"사", "술":"묘", "해":"절", "자":"태", "축":"양"}, # 병과 동일 (화토동법)
+    "기": {"유":"장생", "신":"목욕", "미":"관대", "오":"건록", "사":"제왕", "진":"쇠", "묘":"병", "인":"사", "축":"묘", "자":"절", "해":"태", "술":"양"}, # 정과 동일 (화토동법)
+    "경": {"사":"장생", "오":"목욕", "미":"관대", "신":"건록", "유":"제왕", "술":"쇠", "해":"병", "자":"사", "축":"묘", "인":"절", "묘":"태", "진":"양"},
+    "신": {"자":"장생", "해":"목욕", "술":"관대", "유":"건록", "신":"제왕", "미":"쇠", "오":"병", "사":"사", "진":"묘", "묘":"절", "인":"태", "축":"양"},
+    "임": {"신":"장생", "유":"목욕", "술":"관대", "해":"건록", "자":"제왕", "축":"쇠", "인":"병", "묘":"사", "진":"묘", "사":"절", "오":"태", "미":"양"},
+    "계": {"묘":"장생", "인":"목욕", "축":"관대", "자":"건록", "해":"제왕", "술":"쇠", "유":"병", "신":"사", "미":"묘", "오":"절", "사":"태", "진":"양"}
+}
+
 # ───────────────────────────────
 # 신강/신약 및 격국 분석용 상수 추가
 # ───────────────────────────────
@@ -196,7 +217,6 @@ SIPSHIN_TO_GYEOK_MAP = {
     '편관':'칠살격', '정관':'정관격', # 편관은 칠살격으로도 불림
     '편인':'편인격', '정인':'정인격'
 }
-
 
 # ───────────────────────────────
 # 신강/신약 판단 및 설명 함수
@@ -1105,7 +1125,15 @@ def get_sipshin_summary_explanation(sipshin_counts, day_master_gan):
     return explanation
 
 # ... (기존의 다른 함수들 get_saju_year, get_year_ganji 등은 이 아래에 위치) ...
+# ... (다른 함수들 get_saju_year, calculate_ohaeng_sipshin_strengths 등 근처) ...
 
+def get_12_unseong(cheon_gan, ji_ji):
+    """천간과 지지에 따른 12운성을 반환합니다."""
+    if not cheon_gan or not ji_ji or cheon_gan == "?" or ji_ji == "?": # 입력값 유효성 검사 강화
+        return "?" # 또는 "입력오류" 등
+    if cheon_gan in _12_UNSEONG_MAP_DATA and ji_ji in _12_UNSEONG_MAP_DATA[cheon_gan]:
+        return _12_UNSEONG_MAP_DATA[cheon_gan][ji_ji]
+    return "계산불가"
 # ───────────────────────────────
 # 1. 절입일 데이터 로딩 (이전과 동일)
 # ───────────────────────────────
@@ -1517,7 +1545,14 @@ if st.sidebar.button("🧮 계산 실행", use_container_width=True, type="prima
         month_pillar_str, month_gan_char, month_ji_char = get_month_ganji(year_gan_char, birth_dt, solar_data)
         day_pillar_str, day_gan_char, day_ji_char = get_day_ganji(birth_dt.year, birth_dt.month, birth_dt.day)
         time_pillar_str, time_gan_char, time_ji_char = get_time_ganji(day_gan_char, birth_dt.hour, birth_dt.minute)
+# ... (time_gan_char, time_ji_char 계산 완료 후) ...
 
+        # --- 각 기둥별 12운성 계산 ---
+        year_unseong = get_12_unseong(year_gan_char, year_ji_char)
+        month_unseong = get_12_unseong(month_gan_char, month_ji_char)
+        day_unseong = get_12_unseong(day_gan_char, day_ji_char)
+        time_unseong = get_12_unseong(time_gan_char, time_ji_char)
+        
         # ==================================================================
         # ▼▼▼▼▼▼▼▼▼▼▼▼▼ 생년월일 및 현재 나이 표시 코드 (여기에 삽입) ▼▼▼▼▼▼▼▼▼▼▼▼▼
         # ==================================================================
@@ -1547,17 +1582,38 @@ if st.sidebar.button("🧮 계산 실행", use_container_width=True, type="prima
         # ▲▲▲▲▲▲▲▲▲▲▲▲▲▲ 생년월일 및 현재 나이 표시 코드 끝 ▲▲▲▲▲▲▲▲▲▲▲▲▲
         # ==================================================================
 
-        # --- 명식 기본 정보 표시 ---
-        st.subheader("📜 사주 명식")
-        ms_data = {
-            "구분":["천간","지지","간지"],
-            "시주":[time_gan_char if "오류" not in time_pillar_str else "?", time_ji_char if "오류" not in time_pillar_str else "?", time_pillar_str if "오류" not in time_pillar_str else "오류"],
-            "일주":[day_gan_char if "오류" not in day_pillar_str else "?", day_ji_char if "오류" not in day_pillar_str else "?", day_pillar_str if "오류" not in day_pillar_str else "오류"],
-            "월주":[month_gan_char if "오류" not in month_pillar_str else "?", month_ji_char if "오류" not in month_pillar_str else "?", month_pillar_str if "오류" not in month_pillar_str else "오류"],
-            "연주":[year_gan_char if "오류" not in year_pillar_str else "?", year_ji_char if "오류" not in year_pillar_str else "?", year_pillar_str if "오류" not in year_pillar_str else "오류"]
-        }
-        ms_df = pd.DataFrame(ms_data).set_index("구분")
-        st.table(ms_df)
+        # --- 명식 기본 정보 표시 ---# --- 명식 기본 정보 표시 ---
+        st.subheader("📜 사주 명식")
+        ms_data = {
+            "구분":["천간","지지","간지", "12운성"], # "12운성" 추가
+            "시주":[
+                    time_gan_char if "오류" not in time_pillar_str else "?",
+                    time_ji_char if "오류" not in time_pillar_str else "?",
+                    time_pillar_str if "오류" not in time_pillar_str else "오류",
+                    time_unseong # 계산된 시주 12운성 추가
+                ],
+            "일주":[
+                    day_gan_char if "오류" not in day_pillar_str else "?",
+                    day_ji_char if "오류" not in day_pillar_str else "?",
+                    day_pillar_str if "오류" not in day_pillar_str else "오류",
+                    day_unseong # 계산된 일주 12운성 추가
+                ],
+            "월주":[
+                    month_gan_char if "오류" not in month_pillar_str else "?",
+                    month_ji_char if "오류" not in month_pillar_str else "?",
+                    month_pillar_str if "오류" not in month_pillar_str else "오류",
+                    month_unseong # 계산된 월주 12운성 추가
+                ],
+            "연주":[
+                    year_gan_char if "오류" not in year_pillar_str else "?",
+                    year_ji_char if "오류" not in year_pillar_str else "?",
+                    year_pillar_str if "오류" not in year_pillar_str else "오류",
+                    year_unseong # 계산된 연주 12운성 추가
+                ]
+        }
+        ms_df = pd.DataFrame(ms_data).set_index("구분")
+        st.table(ms_df) # 이제 테이블에 12운성 행이 표시됩니다.
+# ... (이후 st.session_state.interpretation_segments에 ms_df.to_markdown() 추가하는 부분은 그대로 두시면 됩니다) ...
         saju_year_caption = f"사주 기준 연도 (입춘 기준): {saju_year_val}년"
         st.caption(saju_year_caption)
         st.session_state.interpretation_segments.append(("📜 사주 명식", ms_df.to_markdown() + "\n" + saju_year_caption))
@@ -1834,6 +1890,22 @@ if st.sidebar.button("🧮 계산 실행", use_container_width=True, type="prima
              guideline_parts.append(f"사주 명식 ▶ 연주 {year_pillar_str}, 월주 {month_pillar_str}, 일주 {day_pillar_str}, 시주 {time_pillar_str}")
         else:
             guideline_parts.append("사주 명식 ▶ 정보 부족")
+# ... (saju_year_caption 추가 로직 바로 전 또는 후) ...
+
+        if 'year_pillar_str' in locals(): # 명식 정보가 있다면 추가
+            # 간지 및 12운성 함께 표시 (오류 처리 포함)
+            def get_pillar_display(pillar_str, unseong_val):
+                return f"{pillar_str if '오류' not in pillar_str else '오류'} ({unseong_val if unseong_val not in ['계산불가', '입력오류', '?'] and '오류' not in pillar_str else '?'})"
+
+            saju_myeongshik_detail_for_guideline = (
+                f"연주: {get_pillar_display(year_pillar_str, year_unseong)}, "
+                f"월주: {get_pillar_display(month_pillar_str, month_unseong)}, "
+                f"일주: {get_pillar_display(day_pillar_str, day_unseong)}, "
+                f"시주: {get_pillar_display(time_pillar_str, time_unseong)}"
+            )
+            guideline_parts.append(f"사주 명식 (+12운성) ▶ {saju_myeongshik_detail_for_guideline}")
+        else:
+            guideline_parts.append("사주 명식 ▶ 정보 부족")
 
         if 'shinkang_status_result' in locals() and 'shinkang_explanation_html' in locals():
             guideline_parts.append(f"일간 강약 ▶ {shinkang_status_result}: {strip_html_tags(shinkang_explanation_html)}")
