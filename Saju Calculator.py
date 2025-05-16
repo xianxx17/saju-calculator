@@ -1899,13 +1899,28 @@ if st.sidebar.button("🧮 계산 실행", use_container_width=True, type="prima
         else:
             guideline_parts.append("사주 명식 ▶ 정보 부족")
 
-        # --- [클립보드 복사 내용] 사주 명식 (+12운성) 정보 추가 ---
-        # 이 코드는 guideline_parts 리스트에 사주 명식 정보를 추가합니다.
-        # 이전에 year_pillar_str, month_pillar_str, day_pillar_str, time_pillar_str 변수와
-        # year_unseong, month_unseong, day_unseong, time_unseong 변수들이
-        # 모두 올바르게 계산되어 있다고 가정합니다.
+        # --- [클립보드 복사 내용] 사주 명식 (+12운성) 정보 추가 ---# 
+            
+            ▼▼▼▼▼▼▼▼▼▼▼▼ [ 여기에 디버깅 코드 확인 ] ▼▼▼▼▼▼▼▼▼▼▼▼
+            st.divider()
+            st.subheader("🔍 변수 존재 여부 확인 (사주 명식 클립보드용)")
 
-        # 필수 변수들이 모두 존재하는지 확인 (더욱 안전한 코드 실행을 위해)
+            vars_to_check_for_guideline = [
+                'year_pillar_str', 'month_pillar_str', 'day_pillar_str', 'time_pillar_str',
+                'year_unseong', 'month_unseong', 'day_unseong', 'time_unseong'
+            ]
+            all_found_debug = True
+            for var_name_to_check in vars_to_check_for_guideline:
+                if var_name_to_check in locals():
+                    st.success(f"✅ '{var_name_to_check}' 변수 존재함, 값: {locals()[var_name_to_check]}")
+                else:
+                    st.error(f"❌ '{var_name_to_check}' 변수 없음 (locals()에 존재하지 않음)")
+                    all_found_debug = False
+            # ... (이하 디버깅 코드) ...
+            st.divider()
+            # ▲▲▲▲▲▲▲▲▲▲▲▲ [ 여기까지 디버깅 코드 ] ▲▲▲▲▲▲▲▲▲▲▲▲
+
+            myeongshik_vars_defined = all( # 이 라인 바로 위에 디버깅 코드가 있어야 합니다.
         myeongshik_vars_defined = all(
             var_name in locals() for var_name in [
                 'year_pillar_str', 'month_pillar_str', 'day_pillar_str', 'time_pillar_str',
