@@ -1846,18 +1846,45 @@ if st.sidebar.button("🧮 계산 실행", use_container_width=True, type="prima
             guideline_parts.append(f"격국 ▶ {locals().get('gekuk_name_result', '정보 없음')}")
 
 
+        # ▼▼▼▼▼▼▼▼▼▼▼▼ [ 여기에 아래 오행/십신 정보 추가 코드를 넣어주세요 ] ▼▼▼▼▼▼▼▼▼▼▼▼
 
-        # ▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼ [ 여기에 아래 6줄의 디버깅 코드만 넣어주세요 ] ▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼
-        st.markdown("---") # 화면에 구분선을 그립니다.
-        st.info("🐞 디버깅: 오행/십신 정보 추가 직전 변수 상태 👇") # 디버깅 섹션 안내
+        # --- 오행 분포 정보 추가 ---
+        ohaeng_distribution_text_parts = []
+        # 디버깅 결과, 아래 if 조건은 True로 확인되었습니다.
+        if 'ohaeng_strengths' in locals() and ohaeng_strengths and locals().get('analysis_possible', False):
+            ohaeng_values_text = ", ".join([f"{OHENG_TO_HANJA.get(o, o)}({o}): {locals()['ohaeng_strengths'].get(o, 0.0)}" for o in OHENG_ORDER])
+            ohaeng_distribution_text_parts.append(f"세력 값: {ohaeng_values_text}")
 
-        st.write(f"1. 분석 가능 여부 (analysis_possible): {locals().get('analysis_possible', '⚠️ 변수 없음')}")
-        st.write(f"2. 오행 세력 (ohaeng_strengths): {locals().get('ohaeng_strengths', '⚠️ 변수 없음')}")
-        st.write(f"3. 십신 세력 (sipshin_strengths): {locals().get('sipshin_strengths', '⚠️ 변수 없음')}")
-        st.write(f"4. 일간 글자 (day_gan_char): '{locals().get('day_gan_char', '⚠️ 변수 없음')}'")
-        st.markdown("---") # 화면에 구분선을 그립니다.
-        # ▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲ [ 여기까지가 추가할 디버깅 코드입니다 ] ▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲
+            ohaeng_summary_text_for_guideline = get_ohaeng_summary_explanation(locals()['ohaeng_strengths'])
+            ohaeng_distribution_text_parts.append(f"요약: {strip_html_tags(ohaeng_summary_text_for_guideline)}")
 
+            guideline_parts.append(f"오행 분포 ▶\n" + "\n".join(ohaeng_distribution_text_parts))
+        else:
+            # 이 부분은 정상적인 경우 실행되지 않아야 합니다.
+            reason = []
+            if not ('ohaeng_strengths' in locals() and ohaeng_strengths): reason.append("ohaeng_strengths 문제")
+            if not locals().get('analysis_possible', False): reason.append("analysis_possible 문제")
+            guideline_parts.append(f"오행 분포 ▶ 추가 조건 실패 ({', '.join(reason)})")
+
+        # --- 십신 분포 정보 추가 ---
+        sipshin_distribution_text_parts = []
+        # 디버깅 결과, 아래 if 조건은 True로 확인되었습니다.
+        if 'sipshin_strengths' in locals() and sipshin_strengths and locals().get('analysis_possible', False) and 'day_gan_char' in locals() and day_gan_char:
+            sipshin_values_text = ", ".join([f"{s}: {locals()['sipshin_strengths'].get(s, 0.0)}" for s in SIPSHIN_ORDER])
+            sipshin_distribution_text_parts.append(f"세력 값: {sipshin_values_text}")
+
+            sipshin_summary_text_for_guideline = get_sipshin_summary_explanation(locals()['sipshin_strengths'], locals()['day_gan_char'])
+            sipshin_distribution_text_parts.append(f"요약: {strip_html_tags(sipshin_summary_text_for_guideline)}")
+
+            guideline_parts.append(f"십신 분포 ▶\n" + "\n".join(sipshin_distribution_text_parts))
+        else:
+            # 이 부분은 정상적인 경우 실행되지 않아야 합니다.
+            reason = []
+            if not ('sipshin_strengths' in locals() and sipshin_strengths): reason.append("sipshin_strengths 문제")
+            if not locals().get('analysis_possible', False): reason.append("analysis_possible 문제")
+            if not ('day_gan_char' in locals() and day_gan_char): reason.append("day_gan_char 문제")
+            guideline_parts.append(f"십신 분포 ▶ 추가 조건 실패 ({', '.join(reason)})")
+        # ▲▲▲▲▲▲▲▲▲▲▲▲ [ 여기까지 오행/십신 정보 추가 코드를 넣어주세요 ] ▲▲▲▲▲▲▲▲▲▲▲▲
         
         if 'hap_chung_results_dict' in locals() and hap_chung_results_dict:
             has_interaction = False
