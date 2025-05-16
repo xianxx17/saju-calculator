@@ -1581,38 +1581,47 @@ if st.sidebar.button("🧮 계산 실행", use_container_width=True, type="prima
         # ==================================================================
         # ▲▲▲▲▲▲▲▲▲▲▲▲▲▲ 생년월일 및 현재 나이 표시 코드 끝 ▲▲▲▲▲▲▲▲▲▲▲▲▲
         # ==================================================================
-# --- 명식 기본 정보 표시 ---
+# --- 각 기둥별 12운성 계산 ---
+        # 이 계산은 year_gan_char, year_ji_char 등이 이전에 확정된 후에 이루어져야 합니다.
+        # get_12_unseong 함수와 _12_UNSEONG_MAP_DATA 상수는 이미 코드 다른 부분에 정의되어 있어야 합니다.
+        year_unseong = get_12_unseong(year_gan_char, year_ji_char)
+        month_unseong = get_12_unseong(month_gan_char, month_ji_char)
+        day_unseong = get_12_unseong(day_gan_char, day_ji_char)
+        time_unseong = get_12_unseong(time_gan_char, time_ji_char)
+
+        # --- 명식 기본 정보 표시 ---
         st.subheader("📜 사주 명식")
         ms_data = {
-            "구분":["천간","지지","간지", "12운성"], # "12운성" 추가
-            "시주":[
-                    time_gan_char if "오류" not in time_pillar_str else "?",
-                    time_ji_char if "오류" not in time_pillar_str else "?",
-                    time_pillar_str if "오류" not in time_pillar_str else "오류",
-                    time_unseong # 계산된 시주 12운성 추가
-                ],
-            "일주":[
-                    day_gan_char if "오류" not in day_pillar_str else "?",
-                    day_ji_char if "오류" not in day_pillar_str else "?",
-                    day_pillar_str if "오류" not in day_pillar_str else "오류",
-                    day_unseong # 계산된 일주 12운성 추가
-                ],
-            "월주":[
-                    month_gan_char if "오류" not in month_pillar_str else "?",
-                    month_ji_char if "오류" not in month_pillar_str else "?",
-                    month_pillar_str if "오류" not in month_pillar_str else "오류",
-                    month_unseong # 계산된 월주 12운성 추가
-                ],
-            "연주":[
-                    year_gan_char if "오류" not in year_pillar_str else "?",
-                    year_ji_char if "오류" not in year_pillar_str else "?",
-                    year_pillar_str if "오류" not in year_pillar_str else "오류",
-                    year_unseong # 계산된 연주 12운성 추가
-                ]
-        }
-        ms_df = pd.DataFrame(ms_data).set_index("구분")
-        st.table(ms_df) # 이제 테이블에 12운성 행이 표시됩니다.
-# ... (이후 st.session_state.interpretation_segments에 ms_df.to_markdown() 추가하는 부분은 그대로 두시면 됩니다) ...
+            "구분": ["천간", "지지", "간지", "12운성"], # "12운성" 행 추가
+            "시주": [
+                time_gan_char if "오류" not in time_pillar_str else "?",
+                time_ji_char if "오류" not in time_pillar_str else "?",
+                time_pillar_str if "오류" not in time_pillar_str else "오류",
+                time_unseong # get_12_unseong 함수에서 "?" 또는 "계산불가"로 반환됨
+            ],
+            "일주": [
+                day_gan_char if "오류" not in day_pillar_str else "?",
+                day_ji_char if "오류" not in day_pillar_str else "?",
+                day_pillar_str if "오류" not in day_pillar_str else "오류",
+                day_unseong
+            ],
+            "월주": [
+                month_gan_char if "오류" not in month_pillar_str else "?",
+                month_ji_char if "오류" not in month_pillar_str else "?",
+                month_pillar_str if "오류" not in month_pillar_str else "오류",
+                month_unseong
+            ],
+            "연주": [
+                year_gan_char if "오류" not in year_pillar_str else "?",
+                year_ji_char if "오류" not in year_pillar_str else "?",
+                year_pillar_str if "오류" not in year_pillar_str else "오류",
+                year_unseong
+            ]
+        }
+        ms_df = pd.DataFrame(ms_data).set_index("구분")
+        st.table(ms_df) # 테이블에 12운성 행이 포함되어 표시됩니다.
+        
+        # saju_year_val 변수는 이 코드 블록 이전에 이미 계산되어 있어야 합니다.
         saju_year_caption = f"사주 기준 연도 (입춘 기준): {saju_year_val}년"
         st.caption(saju_year_caption)
         st.session_state.interpretation_segments.append(("📜 사주 명식", ms_df.to_markdown() + "\n" + saju_year_caption))
