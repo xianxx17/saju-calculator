@@ -1927,9 +1927,16 @@ if st.sidebar.button("🧮 계산 실행", use_container_width=True, type="prima
         # ▲▲▲▲▲▲▲▲▲▲▲▲ [ 여기까지 디버깅 코드 ] ▲▲▲▲▲▲▲▲▲▲▲▲
 # (이전 코드... 예를 들어, "🔍 변수 존재 여부 확인 (사주 명식 클립보드용)" 디버깅 코드의 마지막 라인인 st.divider() 다음 줄부터입니다.)
 
-            # ▼▼▼▼▼▼▼▼▼▼▼▼ [ 이 아래 코드로 교체해주세요 ] ▼▼▼▼▼▼▼▼▼▼▼▼
+# ... (보여주신 디버깅 코드의 마지막 부분) ...
+        if all_myeongshik_vars_available_debug:
+            st.info("👍 (클립보드 명식 디버그) 모든 필수 변수가 존재합니다.")
+        else:
+            st.warning("⚠️ (클립보드 명식 디버그) 일부 필수 변수가 없습니다. 위 목록 확인!")
+        st.divider() # <--- 보여주신 디버깅 코드의 마지막 라인
+
+            # ▼▼▼▼▼▼▼▼▼▼▼▼ [ 이 아래 코드가 바로 다음에, 위 st.divider()와 같은 들여쓰기로 와야 합니다 ] ▼▼▼▼▼▼▼▼▼▼▼▼
             # 1. 확인할 변수 이름 리스트 (이전에 화면 디버깅에서 사용했던 것과 동일한 목록)
-        myeongshik_clipboard_required_vars_for_all_check = [
+            myeongshik_clipboard_required_vars_for_all_check = [
                 'year_pillar_str', 'month_pillar_str', 'day_pillar_str', 'time_pillar_str',
                 'year_unseong', 'month_unseong', 'day_unseong', 'time_unseong',
                 'saju_year_val'
@@ -1939,8 +1946,8 @@ if st.sidebar.button("🧮 계산 실행", use_container_width=True, type="prima
 
             # 2. 각 변수가 locals()에 있는지 확인하여 불리언(True/False) 리스트를 명시적으로 만듭니다.
             boolean_checks_for_all_function = []
-            for var_name_for_all in myeongshik_clipboard_required_vars_for_all_check:
-                is_present_in_locals = var_name_for_all in locals()
+            for var_name_for_all in myeongshik_clipboard_required_vars_for_all_check: # 이 for문은 위의 myeongshik_... 리스트 정의와 같은 들여쓰기
+                is_present_in_locals = var_name_for_all in locals() # 이 안의 코드는 한 단계 더 들여쓰기
                 boolean_checks_for_all_function.append(is_present_in_locals)
             
             # 화면에 생성된 불리언 리스트 확인 (선택적 디버깅)
@@ -1950,7 +1957,7 @@ if st.sidebar.button("🧮 계산 실행", use_container_width=True, type="prima
             all_myeongshik_vars_available_for_clipboard = all(boolean_checks_for_all_function)
 
             # 4. all() 함수의 최종 결과값을 화면에 error 메시지로 표시합니다.
-            st.error(f"CRITICAL DEBUG: all_myeongshik_vars_available_for_clipboard 변수의 최종 값 = {all_myeongshik_vars_available_for_clipboard}")
+            st.error(f"CRITICAL DEBUG: myeongshik_vars_defined_for_clipboard 변수의 실제 값 = {all_myeongshik_vars_available_for_clipboard}")
 
             # 5. 이 결과를 바탕으로 guideline_parts에 내용을 추가합니다.
             if all_myeongshik_vars_available_for_clipboard:
@@ -1973,15 +1980,14 @@ if st.sidebar.button("🧮 계산 실행", use_container_width=True, type="prima
                 missing_vars_list_for_clipboard_msg = [
                     var_name for var_name in myeongshik_clipboard_required_vars_for_all_check if var_name not in locals()
                 ]
-                if not missing_vars_list_for_clipboard_msg: # 모든 변수는 locals()에 있지만 all()이 False인 경우
+                if not missing_vars_list_for_clipboard_msg: 
                      missing_vars_list_for_clipboard_msg.append("알 수 없는 이유 (개별 변수는 존재하나 전체 조건 불충족)")
                 
                 # 화면에 어떤 불리언 리스트로 all()이 False가 되었는지 추가 디버깅
                 st.warning(f"DEBUG: all() 함수에 전달된 불리언 리스트가 False를 반환했습니다: {boolean_checks_for_all_function}")
 
                 guideline_parts.append(f"사주 명식 (+12운성) ▶ 기본 정보 부족 (변수 확인: {', '.join(missing_vars_list_for_clipboard_msg)})")
-            # ▲▲▲▲▲▲▲▲▲▲▲▲ [ 여기까지 교체할 코드입니다 ] ▲▲▲▲▲▲▲▲▲▲▲▲
-        
+            # ▲▲▲▲▲▲▲▲▲▲▲▲ [ 여기까지 교체할 코드입니다 ] ▲▲▲▲▲▲▲▲▲▲▲▲        
         # ▼▼▼▼▼▼▼▼▼▼▼▼ [ 여기에 아래 st.critical() 한 줄만 추가해주세요 ] ▼▼▼▼▼▼▼▼▼▼▼▼
         st.error(f"CRITICAL DEBUG: myeongshik_vars_defined_for_clipboard 변수의 실제 값 = {myeongshik_vars_defined_for_clipboard}")
         # ▲▲▲▲▲▲▲▲▲▲▲▲ [ 여기까지 한 줄입니다 ] ▲▲▲▲▲▲▲▲▲▲▲▲
