@@ -1931,9 +1931,9 @@ if st.sidebar.button("🧮 계산 실행", use_container_width=True, type="prima
             var_name in locals() for var_name in myeongshik_clipboard_required_vars_debug 
         )
 
-            # ▼▼▼▼▼▼▼▼▼▼▼▼ [ 여기에 아래 st.critical() 한 줄만 추가해주세요 ] ▼▼▼▼▼▼▼▼▼▼▼▼
-            st.critical(f"CRITICAL DEBUG: all_myeongshik_vars_available_for_clipboard 변수의 실제 값 = {all_myeongshik_vars_available_for_clipboard}")
-            # ▲▲▲▲▲▲▲▲▲▲▲▲ [ 여기까지 한 줄입니다 ] ▲▲▲▲▲▲▲▲▲▲▲▲
+        # ▼▼▼▼▼▼▼▼▼▼▼▼ [ 여기에 아래 st.critical() 한 줄만 추가해주세요 ] ▼▼▼▼▼▼▼▼▼▼▼▼
+        st.critical(f"CRITICAL DEBUG: all_myeongshik_vars_available_for_clipboard 변수의 실제 값 = {all_myeongshik_vars_available_for_clipboard}")
+        # ▲▲▲▲▲▲▲▲▲▲▲▲ [ 여기까지 한 줄입니다 ] ▲▲▲▲▲▲▲▲▲▲▲▲
 
         if myeongshik_vars_defined_for_clipboard:
             year_display_text_cb = f"{year_pillar_str if '오류' not in year_pillar_str else '오류'} ({str(year_unseong) if str(year_unseong) not in ['계산불가', '입력오류', '?'] and '오류' not in year_pillar_str else '?'})"
