@@ -1932,7 +1932,7 @@ if st.sidebar.button("🧮 계산 실행", use_container_width=True, type="prima
         )
 
         # ▼▼▼▼▼▼▼▼▼▼▼▼ [ 여기에 아래 st.critical() 한 줄만 추가해주세요 ] ▼▼▼▼▼▼▼▼▼▼▼▼
-        st.error(f"CRITICAL DEBUG: all_myeongshik_vars_available_for_clipboard 변수의 실제 값 = {all_myeongshik_vars_available_for_clipboard}")
+        st.error(f"CRITICAL DEBUG: myeongshik_vars_defined_for_clipboard 변수의 실제 값 = {myeongshik_vars_defined_for_clipboard}")
         # ▲▲▲▲▲▲▲▲▲▲▲▲ [ 여기까지 한 줄입니다 ] ▲▲▲▲▲▲▲▲▲▲▲▲
 
         if myeongshik_vars_defined_for_clipboard:
