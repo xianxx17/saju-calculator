@@ -1990,9 +1990,22 @@ if st.sidebar.button("🧮 계산 실행", use_container_width=True, type="prima
             
         final_condition_met_for_clipboard = all(boolean_list_for_all_func_cb)
 
-        # 4. 최종 조건에 따라 guideline_parts에 정보 추가
         if final_condition_met_for_clipboard:
-                # ... (saju_myeongshik_detail_for_guideline 생성) ...
+                # year_display_text_cb, month_display_text_cb 등을 계산하는 코드가 이 위에 있어야 합니다.
+                # 예시:
+                year_display_text_cb = f"{year_pillar_str} ({year_unseong})" # 실제로는 더 복잡한 조건이 있었음
+                month_display_text_cb = f"{month_pillar_str} ({month_unseong})"
+                day_display_text_cb = f"{day_pillar_str} ({day_unseong})"
+                time_display_text_cb = f"{time_pillar_str} ({time_unseong})"
+
+                # ▼▼▼ 이와 같은 변수 정의 코드가 실제로 있어야 합니다 ▼▼▼
+                saju_myeongshik_detail_for_guideline = (
+                    f"연주: {year_display_text_cb}, "
+                    f"월주: {month_display_text_cb}, "
+                    f"일주: {day_display_text_cb}, "
+                    f"시주: {time_display_text_cb}"
+                )
+                # ▲▲▲ 이와 같은 변수 정의 코드가 실제로 있어야 합니다 ▲▲▲
                 guideline_parts.append(f"사주 명식 (+12운성 궁위포태) ▶ {saju_myeongshik_detail_for_guideline}")
                 # saju_year_val 변수는 이 코드 블록 이전에 이미 계산되어 있어야 합니다.
                 if 'saju_year_val' in locals() and saju_year_val is not None:
