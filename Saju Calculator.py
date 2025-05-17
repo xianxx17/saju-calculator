@@ -1611,86 +1611,62 @@ if st.sidebar.button("🧮 계산 실행", use_container_width=True, type="prima
         day_unseong = get_12_unseong(day_gan_char, day_ji_char)
         time_unseong = get_12_unseong(time_gan_char, time_ji_char)
 
-        # --- 명식 기본 정보 표시 ---
+# --- 명식 기본 정보 표시 ---
         st.subheader("📜 사주 명식")
+
+        # day_gan_char 변수가 이 시점에서 유효한 값을 가지고 있어야 합니다.
+        # 만약 day_gan_char가 "?"나 오류 문자열일 수 있다면, 적절히 처리해야 합니다.
+        # 예: display_day_gan = day_gan_char if day_gan_char and day_gan_char not in ["?", "오류"] else "일간"
+        display_day_gan = day_gan_char # 일단 그대로 사용, day_gan_char가 유효하다고 가정
+
         ms_data = {
-            "구분": ["천간", "지지", "간지", "12운성 궁위포태"], # "12운성" 행 추가
+            "구분": [
+                "천간",
+                "지지",
+                "간지",
+                "12운성 궁위포태",
+                f"일간({display_day_gan})기준 포태"  # 새로운 행 이름
+            ],
             "시주": [
                 time_gan_char if "오류" not in time_pillar_str else "?",
                 time_ji_char if "오류" not in time_pillar_str else "?",
                 time_pillar_str if "오류" not in time_pillar_str else "오류",
-                time_unseong # get_12_unseong 함수에서 "?" 또는 "계산불가"로 반환됨
+                time_unseong,  # 기존 궁위포태 (시간 기준)
+                ilgan_potae_vs_time if time_ji_char and time_ji_char not in ["?", "오류"] else "?" # 일간 vs 시지
             ],
             "일주": [
                 day_gan_char if "오류" not in day_pillar_str else "?",
                 day_ji_char if "오류" not in day_pillar_str else "?",
                 day_pillar_str if "오류" not in day_pillar_str else "오류",
-                day_unseong
+                day_unseong,  # 기존 궁위포태 (일간 기준, 일간포태와 동일)
+                ilgan_potae_vs_day if day_ji_char and day_ji_char not in ["?", "오류"] else "?" # 일간 vs 일지 (day_unseong 값과 동일)
             ],
             "월주": [
                 month_gan_char if "오류" not in month_pillar_str else "?",
                 month_ji_char if "오류" not in month_pillar_str else "?",
                 month_pillar_str if "오류" not in month_pillar_str else "오류",
-                month_unseong
+                month_unseong, # 기존 궁위포태 (월간 기준)
+                ilgan_potae_vs_month if month_ji_char and month_ji_char not in ["?", "오류"] else "?" # 일간 vs 월지
             ],
             "연주": [
                 year_gan_char if "오류" not in year_pillar_str else "?",
                 year_ji_char if "오류" not in year_pillar_str else "?",
                 year_pillar_str if "오류" not in year_pillar_str else "오류",
-                year_unseong
+                year_unseong,  # 기존 궁위포태 (연간 기준)
+                ilgan_potae_vs_year if year_ji_char and year_ji_char not in ["?", "오류"] else "?" # 일간 vs 연지
             ]
         }
         ms_df = pd.DataFrame(ms_data).set_index("구분")
-        st.table(ms_df) # 테이블에 12운성 행이 포함되어 표시됩니다.
+        st.table(ms_df) # 테이블에 새로운 행이 포함되어 표시됩니다.
         
-        # saju_year_val 변수는 이 코드 블록 이전에 이미 계산되어 있어야 합니다.
+        # 사주 기준 연도 표시는 그대로 유지
         saju_year_caption = f"사주 기준 연도 (입춘 기준): {saju_year_val}년"
         st.caption(saju_year_caption)
+
+        # 세션 상태에 저장하는 명식 정보도 자동으로 업데이트된 DataFrame이 마크다운으로 변환되어 저장됩니다.
+        # (기존 코드 유지)
         st.session_state.interpretation_segments.append(("📜 사주 명식", ms_df.to_markdown() + "\n" + saju_year_caption))
-
-        # ▼▼▼▼▼▼▼▼▼▼▼▼ [ 여기에 아래 일간포태 UI 표시 코드 추가 ] ▼▼▼▼▼▼▼▼▼▼▼▼
-        # --- 화면에 일간 기준 12운성 (일간포태) 표시 ---
-        current_day_gan_for_ui = locals().get('day_gan_char') # 안전하게 변수 가져오기
-        analysis_ok_for_ui = locals().get('analysis_possible', False)
-
-        if analysis_ok_for_ui and current_day_gan_for_ui and \
-           current_day_gan_for_ui not in ["?", "오류", "입력오류", "계산불가"]:
-
-            st.markdown("---")
-            st.subheader(f"📖 일간({current_day_gan_for_ui}) 기준 12운성 (일간포태)")
-
-            # 각 지지 변수 안전하게 가져오기
-            yj_for_ui = locals().get('year_ji_char', '?')
-            mj_for_ui = locals().get('month_ji_char', '?')
-            dj_for_ui = locals().get('day_ji_char', '?')
-            tj_for_ui = locals().get('time_ji_char', '?')
-
-            # 위에서 계산된 일간포태 변수 사용
-            potae_data_for_table = [
-                {"기준 지지": f"년지({yj_for_ui})", "일간의 12운성": ilgan_potae_vs_year},
-                {"기준 지지": f"월지({mj_for_ui})", "일간의 12운성": ilgan_potae_vs_month},
-                {"기준 지지": f"일지({dj_for_ui})", "일간의 12운성": ilgan_potae_vs_day}, # day_unseong과 동일
-                {"기준 지지": f"시지({tj_for_ui})", "일간의 12운성": ilgan_potae_vs_time}
-            ]
-
-            # 유효하지 않은 지지 정보는 필터링하거나 "?"로 표시되도록 이미 처리됨
-            potae_df_for_ui = pd.DataFrame(potae_data_for_table)
-            if not potae_df_for_ui.empty:
-                st.table(potae_df_for_ui.set_index("기준 지지"))
-
-            # "전체 풀이 내용 다시 보기" 섹션에도 추가 (해설 없이 운성 이름만)
-            segment_text_potae = f"**일간({current_day_gan_for_ui}) 기준 12운성 (일간포태):**\n"
-            segment_text_potae += f"- vs 년지({yj_for_ui}): **{ilgan_potae_vs_year}**\n"
-            segment_text_potae += f"- vs 월지({mj_for_ui}): **{ilgan_potae_vs_month}**\n"
-            segment_text_potae += f"- vs 일지({dj_for_ui}): **{ilgan_potae_vs_day}**\n"
-            segment_text_potae += f"- vs 시지({tj_for_ui}): **{ilgan_potae_vs_time}**"
-            st.session_state.interpretation_segments.append(("📖 일간 기준 12운성 (일간포태)", segment_text_potae))
-
-        else: # 일간 정보가 유효하지 않은 경우
-            st.markdown("---")
-            st.text("일간 정보가 유효하지 않아 '일간 기준 12운성(일간포태)'을 표시할 수 없습니다.")
-        # ▲▲▲▲▲▲▲▲▲▲▲▲ [ 여기까지 일간포태 UI 표시 코드 추가 ] ▲▲▲▲▲▲▲▲▲▲▲▲
-        
+   
         # --- 분석을 위한 8글자 준비 및 유효성 검사 ---
         saju_8char_for_analysis = {
             "year_gan": year_gan_char, "year_ji": year_ji_char,
